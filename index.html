@@ -1,532 +1,2350 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0b1512">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>KICK TRAINING — キック力トレーニング</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0B1026" />
+<title>VOLLEYSHOOT CHALLENGE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=M+PLUS+1:wght@500;700;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
 <style>
-  :root{
-    --pitch:#0b1512;        /* 夜のピッチ */
-    --pitch-2:#10201a;      /* カードの芝 */
-    --line:#e9f3ec;         /* チョークライン */
-    --line-dim:rgba(233,243,236,.45);
-    --line-faint:rgba(233,243,236,.14);
-    --ball:#ff7a1a;         /* 高視認マッチボール */
-    --ball-soft:rgba(255,122,26,.16);
-    --ok:#4fd58b;
-    --num:'Oswald', sans-serif;
-    --jp:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
-    --radius:14px;
+  :root {
+    --navy: #07090F;
+    --navy2: #0D1220;
+    --navy-glass: rgba(7, 9, 15, 0.82);
+    --white: #F2F5FA;
+    --mute: #8892A6;
+    --cyan: #1FE0D8;
+    --cyan2: #2E8FFF;
+    --gold: #FFC53D;
+    --red: #FF4757;
+    --line: rgba(242,245,250,.10);
+    --hud-font: 'Bungee', 'M PLUS 1', sans-serif;
+    --body-font: 'M PLUS 1', sans-serif;
+    --accent-font: 'Rajdhani', 'M PLUS 1', sans-serif;
   }
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%}
-  body{
-    font-family:var(--jp);
-    background:var(--pitch);
-    color:var(--line);
-    min-height:100dvh;
-    overscroll-behavior:none;
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #000;
+    color: var(--white);
+    font-family: var(--body-font);
+    touch-action: none;
+    overscroll-behavior: none;
   }
-  /* チョークで描いたペナルティアーク(背景の署名要素) */
-  body::before{
-    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  #stage { position: fixed; inset: 0; }
+  #video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    background: #000;
+  }
+  #video.mirrored { transform: scaleX(-1); }
+  #canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* ===== 共通オーバーレイ ===== */
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    overflow-y: auto;
+    padding: max(20px, env(safe-area-inset-top)) 24px max(28px, env(safe-area-inset-bottom));
     background:
-      radial-gradient(circle 300px at 50% -160px, transparent 298px, var(--line-faint) 299px, var(--line-faint) 301px, transparent 302px),
-      linear-gradient(rgba(233,243,236,.03) 1px, transparent 1px);
-    background-size:100% 100%, 100% 96px;
+      radial-gradient(140% 70% at 50% -15%, rgba(31,224,216,0.10), transparent 55%),
+      radial-gradient(120% 60% at 85% 110%, rgba(46,143,255,0.08), transparent 55%),
+      linear-gradient(180deg, #05070C 0%, #0A0E17 55%, #05070C 100%);
+    text-align: center;
+    z-index: 20;
+    transition: opacity .25s ease;
   }
-  header{
-    position:sticky;top:0;z-index:20;
-    background:linear-gradient(var(--pitch) 75%, transparent);
-    padding:calc(env(safe-area-inset-top) + 14px) 20px 18px;
+  .screen::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: -1;
+    background-image:
+      linear-gradient(rgba(242,245,250,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(242,245,250,.035) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: radial-gradient(120% 70% at 50% 0%, #000 40%, transparent 85%);
   }
-  .brand{display:flex;align-items:baseline;gap:10px}
-  .brand h1{
-    font-family:var(--num);font-weight:700;font-size:22px;letter-spacing:.14em;
-  }
-  .brand h1 em{font-style:normal;color:var(--ball)}
-  .brand span{font-size:11px;color:var(--line-dim);letter-spacing:.08em}
+  .screen.hidden { opacity: 0; pointer-events: none; }
 
-  main{position:relative;z-index:1;padding:0 16px 110px;max-width:520px;margin:0 auto}
-  section{display:none}
-  section.active{display:block;animation:rise .25s ease}
-  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  @media (prefers-reduced-motion:reduce){section.active{animation:none}}
+  .eyebrow {
+    font-family: var(--accent-font); font-weight: 700;
+    font-size: 12px; letter-spacing: .42em;
+    color: var(--cyan);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before, .eyebrow::after { content: ""; width: 22px; height: 1px; background: linear-gradient(90deg, transparent, var(--cyan)); }
+  .eyebrow::after { background: linear-gradient(90deg, var(--cyan), transparent); }
+  h1.title {
+    font-family: var(--body-font); font-weight: 900;
+    font-size: clamp(28px, 8.5vw, 50px);
+    letter-spacing: -.01em;
+    line-height: 1.08;
+    color: var(--white);
+  }
+  h1.title .gold {
+    color: transparent;
+    background: linear-gradient(120deg, var(--cyan), var(--cyan2));
+    -webkit-background-clip: text; background-clip: text;
+  }
+  .subtitle { font-weight: 500; font-size: 13.5px; color: var(--mute); max-width: 420px; line-height: 1.75; }
 
-  .eyebrow{
-    font-size:11px;letter-spacing:.22em;color:var(--line-dim);
-    margin:6px 2px 12px;font-weight:600;
+  .btn {
+    font-family: var(--accent-font); font-weight: 700;
+    font-size: 17px; letter-spacing: .04em;
+    color: var(--navy);
+    background: linear-gradient(120deg, var(--cyan) 0%, var(--cyan2) 100%);
+    border: none; border-radius: 10px;
+    padding: 15px 42px;
+    cursor: pointer;
+    box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 10px 24px rgba(31,224,216,.22);
+    transition: transform .08s ease, box-shadow .08s ease, filter .12s ease;
   }
-  .card{
-    background:var(--pitch-2);
-    border:1px solid var(--line-faint);
-    border-radius:var(--radius);
-    padding:18px;margin-bottom:14px;
+  .btn:active { transform: translateY(2px); filter: brightness(.94); }
+  .btn.gold {
+    background: linear-gradient(120deg, var(--gold) 0%, #FF9F43 100%);
+    box-shadow: 0 1px 0 rgba(255,255,255,.3) inset, 0 10px 24px rgba(255,197,61,.22);
   }
+  .btn.ghost {
+    background: transparent; color: var(--white);
+    border: 1px solid var(--line);
+    box-shadow: none; font-weight: 700; font-size: 14px; padding: 12px 30px;
+  }
+  .btn.ghost:active { background: rgba(242,245,250,.06); }
+  .btn:disabled { opacity: .4; pointer-events: none; }
+  .icon-btn {
+    position: absolute; top: max(16px, env(safe-area-inset-top)); left: 16px;
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(242,245,250,.05); border: 1px solid var(--line);
+    color: var(--white); font-size: 18px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 21;
+  }
+  .icon-btn:active { background: rgba(242,245,250,.1); }
 
-  /* ===== 計測 ===== */
-  .scoreboard{
-    text-align:center;padding:30px 18px 26px;
-    border:1px solid var(--line-faint);border-radius:var(--radius);
-    background:
-      radial-gradient(circle at 50% 120%, var(--ball-soft), transparent 60%),
-      var(--pitch-2);
-    margin-bottom:14px;
-  }
-  .speed-value{
-    font-family:var(--num);font-weight:700;
-    font-size:clamp(64px,22vw,96px);line-height:1;
-    font-variant-numeric:tabular-nums;
-    color:var(--line);
-  }
-  .speed-value.live{color:var(--ball)}
-  .speed-unit{font-family:var(--num);font-size:16px;letter-spacing:.3em;color:var(--line-dim);margin-top:6px}
-  .speed-sub{font-size:12px;color:var(--line-dim);margin-top:10px;min-height:1.2em}
-
-  .dist-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-  .dist-row label{font-size:13px;color:var(--line-dim);white-space:nowrap}
-  .dist-row input{
-    flex:1;background:var(--pitch);border:1px solid var(--line-faint);
-    border-radius:10px;color:var(--line);font-family:var(--num);
-    font-size:22px;padding:10px 12px;text-align:center;min-width:0;
-  }
-  .dist-row input:focus{outline:2px solid var(--ball);outline-offset:1px;border-color:transparent}
-  .dist-row .u{font-family:var(--num);font-size:15px;color:var(--line-dim)}
-  .chip-row{display:flex;gap:8px;margin-bottom:16px}
-  .chip{
-    flex:1;background:transparent;border:1px solid var(--line-faint);color:var(--line-dim);
-    border-radius:999px;padding:8px 0;font-size:13px;font-family:var(--num);cursor:pointer;
-  }
-  .chip:active{border-color:var(--ball);color:var(--ball)}
-
-  .tap-btn{
-    width:100%;border:none;border-radius:var(--radius);cursor:pointer;
-    padding:26px 0;font-size:20px;font-weight:700;font-family:var(--jp);
-    letter-spacing:.1em;color:#14100b;background:var(--ball);
-    transition:transform .06s ease;
-  }
-  .tap-btn:active{transform:scale(.98)}
-  .tap-btn.armed{background:var(--line);color:var(--pitch)}
-  .tap-btn:focus-visible{outline:3px solid var(--line);outline-offset:3px}
-  .howto{font-size:12px;color:var(--line-dim);line-height:1.9;margin-top:14px}
-  .howto b{color:var(--line)}
-  .result-actions{display:flex;gap:10px;margin-top:14px}
-  .ghost-btn{
-    flex:1;background:transparent;border:1px solid var(--line-dim);color:var(--line);
-    border-radius:10px;padding:12px 0;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--jp);
-  }
-  .ghost-btn.save{border-color:var(--ok);color:var(--ok)}
-  .ghost-btn:focus-visible,.chip:focus-visible{outline:2px solid var(--ball);outline-offset:2px}
-
-  /* ===== トレーニング ===== */
-  .menu-group{margin-bottom:8px}
-  .menu-title{
-    display:flex;align-items:center;gap:10px;margin:18px 2px 10px;
-  }
-  .menu-title .tag{
-    font-family:var(--num);font-size:11px;letter-spacing:.15em;color:var(--ball);
-    border:1px solid var(--ball);border-radius:4px;padding:2px 8px;
-  }
-  .menu-title h3{font-size:14px;font-weight:600}
-  .drill{
-    display:flex;align-items:center;gap:12px;
-    background:var(--pitch-2);border:1px solid var(--line-faint);
-    border-radius:var(--radius);padding:14px;margin-bottom:8px;cursor:pointer;
-  }
-  .drill input{width:20px;height:20px;accent-color:var(--ok);flex-shrink:0}
-  .drill .info{flex:1;min-width:0}
-  .drill .name{font-size:15px;font-weight:600}
-  .drill .dose{font-family:var(--num);font-size:12px;color:var(--ball);letter-spacing:.06em;margin-top:2px}
-  .drill .desc{font-size:12px;color:var(--line-dim);line-height:1.7;margin-top:4px}
-  .drill.done{opacity:.45}
-  .drill.done .name{text-decoration:line-through}
-  .progress-band{
-    display:flex;align-items:center;justify-content:space-between;
-    background:var(--pitch-2);border:1px solid var(--line-faint);
-    border-radius:var(--radius);padding:14px 16px;margin-top:6px;
-  }
-  .progress-band .pct{font-family:var(--num);font-size:26px;font-weight:700;color:var(--ok)}
-  .progress-band .lbl{font-size:12px;color:var(--line-dim)}
-
-  /* 休憩タイマー */
-  .rest{display:flex;align-items:center;gap:12px}
-  .rest .t{font-family:var(--num);font-size:34px;font-weight:700;min-width:88px;font-variant-numeric:tabular-nums}
-  .rest .t.run{color:var(--ball)}
-  .rest button{
-    background:transparent;border:1px solid var(--line-dim);color:var(--line);
-    border-radius:10px;padding:10px 16px;font-size:13px;cursor:pointer;font-family:var(--jp);
+  @media (orientation: landscape) and (max-height: 520px) {
+    .screen { gap: 8px; justify-content: flex-start; padding-top: 16px; }
+    h1.title { font-size: clamp(20px, 4.5vw, 30px); }
+    .howto { font-size: 11px; padding: 10px 14px; gap: 4px; }
+    .subtitle { font-size: 12px; }
   }
 
-  /* ===== 記録 ===== */
-  .best-band{
-    display:flex;justify-content:space-between;align-items:center;
-    border:1px solid var(--ball);border-radius:var(--radius);
-    background:var(--ball-soft);padding:16px 18px;margin-bottom:14px;
+  /* ===== モード選択カード ===== */
+  .mode-grid { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 480px; }
+  .mode-card {
+    flex: 1 1 190px; min-width: 160px;
+    background: linear-gradient(165deg, rgba(242,245,250,.055), rgba(242,245,250,.02));
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px 16px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color .15s ease, transform .1s ease, background .15s ease;
+    position: relative;
+    overflow: hidden;
   }
-  .best-band .v{font-family:var(--num);font-size:34px;font-weight:700;color:var(--ball)}
-  .best-band .l{font-size:12px;color:var(--line-dim)}
-  #chart{width:100%;height:auto;display:block}
-  .rec-row{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:12px 4px;border-bottom:1px solid var(--line-faint);font-size:14px;
+  .mode-card:active { transform: scale(.98); }
+  .mode-card .mc-icon {
+    width: 42px; height: 42px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(31,224,216,.12); margin-bottom: 14px;
+    font-size: 20px;
   }
-  .rec-row:last-child{border-bottom:none}
-  .rec-row .d{color:var(--line-dim);font-size:12px}
-  .rec-row .s{font-family:var(--num);font-size:18px;font-weight:600}
-  .rec-row .del{background:none;border:none;color:var(--line-dim);font-size:16px;cursor:pointer;padding:4px 8px}
-  .empty{color:var(--line-dim);font-size:13px;text-align:center;padding:26px 0;line-height:1.9}
+  .mode-card .mc-title { font-family: var(--accent-font); font-weight: 700; font-size: 19px; letter-spacing: .02em; color: var(--white); }
+  .mode-card .mc-desc { font-size: 11.5px; color: var(--mute); margin-top: 6px; line-height: 1.6; }
+  .mode-card.hover, .mode-card:hover { border-color: rgba(31,224,216,.4); background: linear-gradient(165deg, rgba(31,224,216,.08), rgba(242,245,250,.02)); }
+  .mode-card[data-mode="TARGET"] .mc-icon { background: rgba(255,197,61,.14); }
 
-  /* ===== タブ ===== */
-  nav{
-    position:fixed;bottom:0;left:0;right:0;z-index:30;
-    display:flex;background:rgba(11,21,18,.92);backdrop-filter:blur(10px);
-    border-top:1px solid var(--line-faint);
-    padding-bottom:env(safe-area-inset-bottom);
+  /* ===== 難易度カード ===== */
+  .diff-grid { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 380px; }
+  .diff-card {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--body-font);
+    background: rgba(242,245,250,.03);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 13px 18px;
+    cursor: pointer;
+    transition: all .12s ease;
+    text-align: left;
   }
-  nav button{
-    flex:1;background:none;border:none;color:var(--line-dim);
-    padding:12px 0 10px;font-size:11px;cursor:pointer;font-family:var(--jp);
-    display:flex;flex-direction:column;align-items:center;gap:4px;letter-spacing:.05em;
+  .diff-card .dc-name { font-weight: 800; font-size: 15px; color: var(--white); }
+  .diff-card .dc-detail { font-weight: 500; font-size: 11px; color: var(--mute); margin-top: 2px; }
+  .diff-card .dc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex-shrink: 0; }
+  .diff-card.selected {
+    border-color: var(--cyan);
+    background: rgba(31,224,216,.08);
   }
-  nav button .ico{font-size:20px;line-height:1}
-  nav button.on{color:var(--ball)}
-  nav button:focus-visible{outline:2px solid var(--ball);outline-offset:-4px}
+  .diff-card.selected .dc-dot { background: var(--cyan); box-shadow: 0 0 8px rgba(31,224,216,.8); }
 
-  .toast{
-    position:fixed;left:50%;bottom:92px;transform:translateX(-50%) translateY(20px);
-    background:var(--line);color:var(--pitch);font-size:13px;font-weight:600;
-    padding:10px 20px;border-radius:999px;opacity:0;pointer-events:none;
-    transition:all .25s ease;z-index:40;white-space:nowrap;
+  /* ===== スコア履歴(ベスト5) ===== */
+  .best5-box {
+    width: 100%; max-width: 380px;
+    background: rgba(242,245,250,.025);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
   }
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .best5-title {
+    font-family: var(--accent-font); font-weight: 700; font-size: 11px;
+    letter-spacing: .18em; color: var(--mute); text-align: left; margin-bottom: 8px;
+  }
+  .best5-list { display: grid; gap: 5px; }
+  .best5-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .best5-rank {
+    font-family: var(--hud-font); font-size: 11px; width: 20px; text-align: center;
+    color: var(--mute);
+  }
+  .best5-row:nth-child(1) .best5-rank { color: var(--gold); }
+  .best5-row:nth-child(2) .best5-rank { color: #C9D3E0; }
+  .best5-row:nth-child(3) .best5-rank { color: #CD8A5A; }
+  .best5-score { font-weight: 800; color: var(--white); flex: 1; text-align: left; }
+  .best5-date { font-size: 10.5px; color: var(--mute); }
+  .best5-empty { font-size: 12px; color: var(--mute); padding: 6px 0; }
+
+  .highscore-line { font-size: 12px; font-weight: 700; color: var(--gold); letter-spacing: .06em; }
+
+  /* ===== ボール凡例 ===== */
+  .ball-legend {
+    width: 100%; max-width: 420px;
+    background: rgba(242,245,250,.03);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: grid; gap: 6px;
+    text-align: left;
+  }
+  .bl-title {
+    font-family: var(--accent-font); font-weight: 700; font-size: 11px;
+    letter-spacing: .18em; color: var(--mute); margin-bottom: 2px;
+  }
+  .bl-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--mute); line-height: 1.5;
+  }
+  .bl-row b { color: var(--white); }
+  .bl-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(245,248,255,.3);
+  }
+
+  .howto {
+    display: grid; gap: 8px;
+    font-size: 12.5px; font-weight: 500;
+    color: var(--mute);
+    background: rgba(242,245,250,.03);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 18px;
+    max-width: 430px;
+    text-align: left;
+    line-height: 1.7;
+  }
+  .howto b { color: var(--cyan); font-weight: 800; }
+
+  /* ===== ゲーム中 HUD ===== */
+  #hud {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: calc(env(safe-area-inset-top) + 10px) 14px 10px;
+    display: flex; align-items: stretch; justify-content: space-between; gap: 10px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  #hud.hidden { display: none; }
+  .hud-cell {
+    background: var(--navy-glass);
+    border: 1px solid rgba(31,224,216,.3);
+    border-radius: 10px;
+    padding: 8px 14px;
+    min-width: 92px;
+    text-align: center;
+    backdrop-filter: blur(6px);
+  }
+  .hud-label { font-family: var(--accent-font); font-size: 10px; font-weight: 700; letter-spacing: .25em; color: var(--mute); }
+  .hud-value { font-family: var(--hud-font); font-size: 24px; color: var(--white); line-height: 1.15; }
+  #hud-score .hud-value { color: var(--gold); text-shadow: 0 0 12px rgba(255,197,61,.5); }
+  #hud-time.warn .hud-value { color: var(--red); text-shadow: 0 0 12px rgba(255,71,87,.6); animation: pulse .6s infinite alternate; }
+  @keyframes pulse { from { opacity: 1; } to { opacity: .55; } }
+
+  #combo-banner {
+    position: absolute; top: 22%; left: 0; right: 0;
+    text-align: center; z-index: 9; pointer-events: none;
+    opacity: 0; transition: opacity .18s ease;
+  }
+  #combo-banner.show { opacity: 1; }
+  #combo-banner .combo-num {
+    font-family: var(--hud-font);
+    font-size: clamp(44px, 13vw, 84px);
+    color: var(--gold);
+    text-shadow: 0 0 26px rgba(255,197,61,.75), 0 5px 0 rgba(0,0,0,.4);
+  }
+  #combo-banner .combo-word {
+    font-family: var(--hud-font); font-size: 16px; color: var(--cyan);
+    letter-spacing: .3em; text-shadow: 0 0 12px rgba(35,224,255,.7);
+  }
+
+  #flip-btn, #quit-btn {
+    position: absolute; z-index: 15;
+    bottom: calc(env(safe-area-inset-bottom) + 16px);
+    background: var(--navy-glass);
+    border: 1px solid rgba(245,248,255,.3);
+    color: var(--white);
+    font-family: var(--body-font); font-weight: 700; font-size: 13px;
+    border-radius: 999px; padding: 10px 18px; cursor: pointer;
+    backdrop-filter: blur(6px);
+  }
+  #flip-btn { right: 14px; }
+  #quit-btn { left: 14px; }
+  #flip-btn.hidden, #quit-btn.hidden { display: none; }
+
+  /* ポジショニングガイド */
+  #positioning-msg {
+    position: absolute; left: 0; right: 0;
+    bottom: calc(env(safe-area-inset-bottom) + 84px);
+    text-align: center; z-index: 12; pointer-events: none;
+  }
+  #positioning-msg.hidden { display: none; }
+  #positioning-msg .msg-pill {
+    display: inline-block;
+    background: var(--navy-glass);
+    border: 1px solid rgba(35,224,255,.4);
+    border-radius: 999px;
+    padding: 12px 22px;
+    font-weight: 700; font-size: 14px;
+    backdrop-filter: blur(6px);
+  }
+  #positioning-msg .msg-pill.ok { border-color: var(--gold); color: var(--gold); }
+
+  #countdown {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 14; pointer-events: none;
+  }
+  #countdown.hidden { display: none; }
+  #countdown span {
+    font-family: var(--hud-font);
+    font-size: clamp(90px, 30vw, 180px);
+    color: var(--white);
+    text-shadow: 0 0 40px rgba(35,224,255,.8), 0 8px 0 rgba(0,0,0,.4);
+  }
+
+  /* 結果画面 */
+  .rank-badge {
+    font-family: var(--hud-font);
+    color: var(--gold);
+    font-size: clamp(72px, 22vw, 130px);
+    line-height: 1;
+    color: var(--gold);
+    text-shadow: 0 0 36px rgba(255,197,61,.8), 0 6px 0 rgba(0,0,0,.4);
+  }
+  .result-score {
+    font-family: var(--hud-font);
+    font-size: clamp(40px, 12vw, 68px);
+    color: var(--white);
+    text-shadow: 0 0 18px rgba(35,224,255,.5);
+  }
+  .result-stats {
+    display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+  }
+  .stat-box {
+    background: rgba(242,245,250,.03);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 18px; min-width: 100px;
+  }
+  .stat-box .s-label { font-family: var(--accent-font); font-size: 10px; font-weight: 700; letter-spacing: .15em; color: var(--mute); }
+  .stat-box .s-value { font-family: var(--hud-font); font-size: 22px; color: var(--cyan); }
+  .newrecord { font-weight: 800; color: var(--gold); font-size: 15px; letter-spacing: .1em; animation: pulse .5s infinite alternate; }
+  .newrecord.hidden { display: none; }
+
+  #loading-note { font-size: 12px; color: rgba(245,248,255,.6); font-weight: 500; }
+  .spinner {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 4px solid rgba(35,224,255,.2);
+    border-top-color: var(--cyan);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #error-box {
+    background: rgba(255,71,87,.12);
+    border: 1px solid rgba(255,71,87,.5);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 13px; font-weight: 500; line-height: 1.7;
+    max-width: 420px; color: #FFD3D8;
+  }
+  #error-box.hidden { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
+<div id="stage">
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="canvas"></canvas>
 
-<header>
-  <div class="brand">
-    <h1>KICK<em>TRAINING</em></h1>
-    <span>キック力測定 & 強化</span>
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-cell" id="hud-score"><div class="hud-label">SCORE</div><div class="hud-value" id="score-val">0</div></div>
+    <div class="hud-cell" id="hud-time"><div class="hud-label">TIME</div><div class="hud-value" id="time-val">60</div></div>
+    <div class="hud-cell" id="hud-hits"><div class="hud-label">HIT</div><div class="hud-value" id="hits-val">0</div></div>
   </div>
-</header>
+  <div id="combo-banner"><div class="combo-num" id="combo-num">2</div><div class="combo-word">COMBO</div></div>
 
-<main>
+  <div id="positioning-msg" class="hidden"><span class="msg-pill" id="positioning-pill">両足がカメラに映る位置に立ってください</span></div>
+  <div id="countdown" class="hidden"><span id="countdown-num">3</span></div>
 
-  <!-- ============ 計測 ============ -->
-  <section id="view-measure" class="active">
-    <p class="eyebrow">SPEED GUN — ボールスピード計測</p>
+  <button id="flip-btn" class="hidden">カメラ切替</button>
+  <button id="quit-btn" class="hidden">やめる</button>
 
-    <div class="scoreboard">
-      <div class="speed-value" id="speedValue">0.0</div>
-      <div class="speed-unit">KM/H</div>
-      <div class="speed-sub" id="speedSub">距離をセットして計測をはじめよう</div>
-    </div>
+  <!-- リプレイ再生オーバーレイ -->
+  <div id="replay-overlay" class="screen hidden" style="z-index: 30;">
+    <div class="eyebrow">REPLAY — 1プレイまるごと</div>
+    <video id="replay-video" controls playsinline loop style="width: min(88vw, 440px); max-height: 62vh; border-radius: 16px; border: 2px solid rgba(35,224,255,0.5); box-shadow: 0 0 30px rgba(35,224,255,0.25); background:#000;"></video>
+    <button class="btn" id="replay-close-btn">閉じる</button>
+  </div>
 
-    <div class="card">
-      <div class="dist-row">
-        <label for="dist">ターゲットまでの距離</label>
-        <input type="number" id="dist" value="10" min="1" max="60" step="0.5" inputmode="decimal">
-        <span class="u">m</span>
+  <!-- スタート画面 -->
+  <div id="screen-start" class="screen">
+    <div class="eyebrow">AI FOOTBALL TRAINING</div>
+    <h1 class="title">VOLLEYSHOOT<br /><span class="gold">CHALLENGE</span></h1>
+    <p class="subtitle">カメラの前に立って、画面に飛んでくるボールを実際に足で蹴ろう。AIがあなたの足の動きをリアルタイムで検出します。</p>
+    <div class="mode-grid">
+      <div class="mode-card" data-mode="VOLLEY">
+        <div class="mc-icon">⚡</div>
+        <div class="mc-title">ミートシュート</div>
+        <div class="mc-desc">飛んでくるボールを正確にミートしてスコアを競う基本トレーニング</div>
       </div>
-      <div class="chip-row">
-        <button class="chip" data-d="5">5m</button>
-        <button class="chip" data-d="10">10m</button>
-        <button class="chip" data-d="16.5">16.5m</button>
-        <button class="chip" data-d="20">20m</button>
-      </div>
-
-      <button class="tap-btn" id="tapBtn">タップして計測スタート</button>
-
-      <div class="result-actions" id="resultActions" hidden>
-        <button class="ghost-btn save" id="saveBtn">記録に保存する</button>
-        <button class="ghost-btn" id="retryBtn">もう一回</button>
-      </div>
-
-      <p class="howto">
-        <b>使いかた:</b> 壁やゴールまでの距離を入力 →
-        ① ボールを<b>蹴った瞬間</b>にタップ → ② ボールが<b>当たった瞬間</b>にもう一度タップ。
-        2回のタップ間の時間から球速を計算します。友だちに計測係を頼むと正確です。
-      </p>
-    </div>
-  </section>
-
-  <!-- ============ トレーニング ============ -->
-  <section id="view-training">
-    <p class="eyebrow">TRAINING — 今日のキック力メニュー</p>
-
-    <div class="progress-band">
-      <div>
-        <div class="lbl">今日の達成度</div>
-        <div style="font-size:13px;margin-top:2px" id="doneCount">0 / 8 種目</div>
-      </div>
-      <div class="pct" id="donePct">0%</div>
-    </div>
-
-    <div class="menu-group" id="menuList"></div>
-
-    <div class="card">
-      <div class="lbl" style="font-size:12px;color:var(--line-dim);margin-bottom:8px">セット間の休憩タイマー</div>
-      <div class="rest">
-        <div class="t" id="restTime">0:60</div>
-        <button id="restStart">スタート</button>
-        <button id="restReset">リセット</button>
+      <div class="mode-card" data-mode="TARGET">
+        <div class="mc-icon">🎯</div>
+        <div class="mc-title">ゴールターゲット</div>
+        <div class="mc-desc">キーパーをかわして空いたコースへ蹴り込む、シュート精度のトレーニング</div>
       </div>
     </div>
-  </section>
+    <div class="ball-legend">
+      <div class="bl-title">BALL GUIDE</div>
+      <div class="bl-row"><span class="bl-dot" style="background:#F5F8FF"></span><b>白</b> 10点 — 基本のボール</div>
+      <div class="bl-row"><span class="bl-dot" style="background:#3B9CFF"></span><b>青</b> 20点 — 高速で飛んでくる</div>
+      <div class="bl-row"><span class="bl-dot" style="background:#FFC53D"></span><b>金</b> 30点 — レア出現の高得点</div>
+      <div class="bl-row"><span class="bl-dot" style="background:#1A1A22; border:1px solid #FF4757"></span><b style="color:#FF4757">黒</b> 蹴ると減点!スルーすればボーナス(静止して当たるのはセーフ)</div>
+    </div>
+    <div class="howto" style="max-width:420px;">
+      <div><b>1.</b> スマホを床や台に立てかけて固定する</div>
+      <div><b>2.</b> 2〜3歩下がって、<b>足元まで全身</b>が映るようにする</div>
+      <div><b>3.</b> ボールは<b>足を振って蹴る</b>!触れるだけでは無得点、速く振ると <b>PERFECT</b> で1.5倍</div>
+      <div><b>※</b> iPad・PCは<b>横画面</b>推奨/スマホは縦でもOK</div>
+    </div>
+    <div id="error-box" class="hidden"></div>
+  </div>
 
-  <!-- ============ 記録 ============ -->
-  <section id="view-records">
-    <p class="eyebrow">RECORDS — 成長のグラフ</p>
-
-    <div class="best-band">
-      <div>
-        <div class="l">自己ベスト</div>
-        <div class="v"><span id="bestVal">—</span> <span style="font-size:14px">km/h</span></div>
+  <!-- モード選択後: 難易度選択画面 -->
+  <div id="screen-difficulty" class="screen hidden">
+    <button class="icon-btn" id="diff-back-btn">←</button>
+    <div class="eyebrow" id="diff-mode-label">MEET SHOT</div>
+    <h1 class="title" id="diff-mode-title">ミートシュート</h1>
+    <p class="subtitle" id="diff-mode-desc">飛んでくるボールを正確にミートしてスコアを競う</p>
+    <div class="diff-grid" id="difficulty-row">
+      <div class="diff-card" data-diff="EASY">
+        <div><div class="dc-name">イージー</div><div class="dc-detail">60秒・大きいボール・ゆっくり</div></div>
+        <div class="dc-dot"></div>
       </div>
-      <div style="text-align:right">
-        <div class="l">計測回数</div>
-        <div class="v" id="totalCount" style="color:var(--line)">0</div>
+      <div class="diff-card selected" data-diff="NORMAL">
+        <div><div class="dc-name">ノーマル</div><div class="dc-detail">60秒・標準サイズ・標準速度</div></div>
+        <div class="dc-dot"></div>
+      </div>
+      <div class="diff-card" data-diff="HARD">
+        <div><div class="dc-name">ハード</div><div class="dc-detail">45秒・小さいボール・高速</div></div>
+        <div class="dc-dot"></div>
+      </div>
+      <div class="diff-card" data-diff="REAL">
+        <div><div class="dc-name">リアル</div><div class="dc-detail">60秒・実物のサッカーボールの物理でボールが落ちる</div></div>
+        <div class="dc-dot"></div>
       </div>
     </div>
-
-    <div class="card">
-      <svg id="chart" viewBox="0 0 340 160" role="img" aria-label="球速の推移グラフ"></svg>
+    <div class="diff-grid" style="margin-top: 14px;">
+      <div class="diff-card" id="free-mode-card">
+        <div><div class="dc-name">フリーモード</div><div class="dc-detail">時間制限なしで延々と練習(スコア記録・リプレイなし)</div></div>
+        <div class="dc-dot"></div>
+      </div>
     </div>
-
-    <div class="card" id="recList">
-      <div class="empty">まだ記録がありません。<br>計測タブでボールスピードを測ってみよう!</div>
+    <div class="best5-box">
+      <div class="best5-title">SCORE HISTORY — BEST 5</div>
+      <div class="best5-list" id="best5-list"></div>
     </div>
-  </section>
+    <div class="highscore-line" id="streak-line" style="color:#7CFC9A"></div>
+    <button class="btn gold" id="start-btn">ゲームスタート</button>
+    <div id="error-box-diff" class="hidden"></div>
+  </div>
 
-</main>
+  <!-- ローディング画面 -->
+  <div id="screen-loading" class="screen hidden">
+    <div class="spinner"></div>
+    <div class="subtitle" id="loading-text">AIモデルを読み込んでいます…</div>
+    <div id="loading-note">初回は数秒かかります(モデルは端末内で動作し、映像は送信されません)</div>
+  </div>
 
-<nav>
-  <button class="on" data-view="measure"><span class="ico">◎</span>計測</button>
-  <button data-view="training"><span class="ico">▲</span>トレーニング</button>
-  <button data-view="records"><span class="ico">▮▮</span>記録</button>
-</nav>
+  <!-- 結果画面 -->
+  <div id="screen-result" class="screen hidden">
+    <div class="eyebrow">RESULT</div>
+    <div class="rank-badge" id="rank-badge">A</div>
+    <div class="result-score" id="result-score">1250</div>
+    <div class="newrecord hidden" id="newrecord">★ ニューレコード! ★</div>
+    <div class="highscore-line" id="streak-result" style="color:#7CFC9A"></div>
+    <div class="result-stats">
+      <div class="stat-box"><div class="s-label">成功数</div><div class="s-value" id="r-hits">0</div></div>
+      <div class="stat-box"><div class="s-label">成功率</div><div class="s-value" id="r-rate">0%</div></div>
+      <div class="stat-box"><div class="s-label">最大コンボ</div><div class="s-value" id="r-combo">0</div></div>
+      <div class="stat-box"><div class="s-label">PERFECT</div><div class="s-value" id="r-perfect">0</div></div>
+      <div class="stat-box"><div class="s-label">黒ボール減点</div><div class="s-value" id="r-penalty" style="color:#FF4757">0</div></div>
+      <div class="stat-box"><div class="s-label">左足 / 右足</div><div class="s-value" id="r-feet">0 / 0</div></div>
+      <div class="stat-box"><div class="s-label">平均反応</div><div class="s-value" id="r-react">-</div></div>
+    </div>
+    <button class="btn ghost hidden" id="replay-view-btn">リプレイを見る</button>
+    <a class="btn ghost hidden" id="replay-save-btn" style="text-decoration:none; display:inline-block;">録画を端末に保存</a>
+    <button class="btn" id="replay-btn">もう一度プレイ</button>
+    <button class="btn ghost" id="share-btn">結果をシェア</button>
+    <button class="btn ghost" id="home-btn">ホームに戻る</button>
+  </div>
+</div>
 
-<div class="toast" id="toast"></div>
+<script type="module">
+/* =========================================================================
+ * VOLLEYSHOOT CHALLENGE — Web版 完全実装
+ * 骨格検出: MediaPipe Tasks Vision PoseLandmarker (端末内で動作)
+ * ========================================================================= */
+import {
+  FilesetResolver,
+  PoseLandmarker,
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 
-<script>
-"use strict";
-
-/* ---------- ストレージ(GitHub PagesではlocalStorage、使えない環境ではメモリに退避) ---------- */
-const store = (() => {
-  let mem = {};
-  const ok = (() => { try { localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; } catch(e){ return false; } })();
-  return {
-    get(k, fb){ try { if(ok){ const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } } catch(e){} return (k in mem) ? mem[k] : fb; },
-    set(k, v){ try { if(ok){ localStorage.setItem(k, JSON.stringify(v)); return; } } catch(e){} mem[k] = v; }
-  };
-})();
-
-/* ---------- 共通 ---------- */
-const $ = s => document.querySelector(s);
-function toast(msg){
-  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
-  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 1800);
+/* ---------------- 定数・難易度設定 ---------------- */
+const DIFFICULTY = {
+  EASY:   { timeLimit: 60, spawnInterval: 2300, speedMin: 0.42, speedMax: 0.58, gravity: 0.62, hitRadius: 78, blueRate: 0.00, goldRate: 0.08, blackRate: 0.06, multiplier: 1.0, ballScale: 1.25, frontRate: 0.35 },
+  NORMAL: { timeLimit: 60, spawnInterval: 1750, speedMin: 0.52, speedMax: 0.72, gravity: 0.72, hitRadius: 62, blueRate: 0.12, goldRate: 0.08, blackRate: 0.12, multiplier: 1.5, ballScale: 1.0, frontRate: 0.45 },
+  HARD:   { timeLimit: 45, spawnInterval: 1300, speedMin: 0.62, speedMax: 0.88, gravity: 0.82, hitRadius: 50, blueRate: 0.20, goldRate: 0.10, blackRate: 0.16, multiplier: 2.0, ballScale: 0.8, frontRate: 0.5 },
+  REAL:   { timeLimit: 60, spawnInterval: 2000, speedMin: 0.5,  speedMax: 0.7,  gravity: 1.0,  hitRadius: 62, blueRate: 0.10, goldRate: 0.08, blackRate: 0.10, multiplier: 1.8, ballScale: 1.0, frontRate: 0.4, real: true },
+};
+const BALL_TYPE = {
+  NORMAL: { points: 10, color: "#F5F8FF", glow: "rgba(245,248,255,0.9)" },
+  BLUE:   { points: 20, color: "#3B9CFF", glow: "rgba(59,156,255,0.95)" },
+  GOLD:   { points: 30, color: "#FFC53D", glow: "rgba(255,197,61,0.95)" },
+  BLACK:  { points: -20, color: "#1A1A22", glow: "rgba(255,71,87,0.95)" },
+};
+// ボールコントロールモードの部位定義
+const PARTS = {
+  FOOT:     { label: "ボレー",   color: "#23E0FF", radiusScale: 1.0 },
+  HEAD:     { label: "ヘディング", color: "#FFC53D", radiusScale: 1.15 },
+  THIGH:    { label: "モモ",     color: "#7CFC9A", radiusScale: 1.0 },
+  SHOULDER: { label: "カタ",     color: "#C77DFF", radiusScale: 0.95 },
+};
+const PART_WEIGHTS = [["FOOT", 0.35], ["HEAD", 0.25], ["THIGH", 0.25], ["SHOULDER", 0.15]];
+// キックのタッチ部位(6分類)
+const TOUCH_TYPES = {
+  INSTEP:   { label: "インステップ",   color: "#FFC53D", power: 1.12, curve: 0,    wContact: 0.55, wSwing: 0.30 },
+  INSIDE:   { label: "インサイド",     color: "#23E0FF", power: 0.85, curve: 0,    wContact: 0.65, wSwing: 0.22 },
+  INFRONT:  { label: "インフロント",   color: "#7CFC9A", power: 1.02, curve: +1.0, wContact: 0.55, wSwing: 0.30 },
+  OUTFRONT: { label: "アウトフロント", color: "#C77DFF", power: 0.95, curve: -1.0, wContact: 0.55, wSwing: 0.30 },
+  OUTSIDE:  { label: "アウトサイド",   color: "#FF9F43", power: 0.80, curve: -0.6, wContact: 0.55, wSwing: 0.30 },
+  HEEL:     { label: "ヒール",         color: "#9AA3B8", power: 0.60, curve: 0,    wContact: 0.60, wSwing: 0.25 },
+};
+// タッチ部位の判定: 軸上の位置(t) × 軸のどちら側か(内/外)
+function classifyTouch(ball, foot, side) {
+  const ax = foot.axis;
+  const fallback = { key: "INSTEP", def: TOUCH_TYPES.INSTEP, medialSignX: 1 };
+  if (!(ax && ax.heel && ax.toe)) return fallback;
+  const ex = ax.toe.x - ax.heel.x, ey = ax.toe.y - ax.heel.y;
+  const len2 = ex * ex + ey * ey;
+  if (len2 < 4) return fallback;
+  const len = Math.sqrt(len2);
+  const bx = ball.x - ax.heel.x, by = ball.y - ax.heel.y;
+  const t = (bx * ex + by * ey) / len2;          // 軸方向: 0=かかと, 1=つま先
+  const perp = (ex * by - ey * bx) / len;        // 軸からの符号付き距離
+  // 体の内側(medial)の向き: もう一方の足を基準に推定
+  const other = side === "L" ? feet.right : feet.left;
+  const refX = other ? other.x : canvas.width / 2;
+  const medialSignX = Math.sign(refX - foot.x) || 1;
+  if (t < 0.18) return { key: "HEEL", def: TOUCH_TYPES.HEEL, medialSignX };
+  if (Math.abs(perp) <= len * 0.30) return { key: "INSTEP", def: TOUCH_TYPES.INSTEP, medialSignX };
+  const ballSideX = Math.sign(ball.x - foot.x) || 1;
+  const isMedial = ballSideX === medialSignX;
+  const isFront = t > 0.8; // つま先付近より先だけが「フロント」
+  const key = isMedial ? (isFront ? "INFRONT" : "INSIDE") : (isFront ? "OUTFRONT" : "OUTSIDE");
+  return { key, def: TOUCH_TYPES[key], medialSignX };
 }
-
-/* ---------- タブ ---------- */
-document.querySelectorAll("nav button").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll("nav button").forEach(b => b.classList.remove("on"));
-    document.querySelectorAll("main section").forEach(s => s.classList.remove("active"));
-    btn.classList.add("on");
-    $("#view-" + btn.dataset.view).classList.add("active");
-    if(btn.dataset.view === "records") renderRecords();
-  });
-});
-
-/* ---------- 計測 ---------- */
-let phase = "idle";   // idle -> armed(蹴った) -> done
-let t0 = 0, lastSpeed = null;
-
-document.querySelectorAll(".chip").forEach(c =>
-  c.addEventListener("click", () => { $("#dist").value = c.dataset.d; })
-);
-
-$("#tapBtn").addEventListener("click", () => {
-  const btn = $("#tapBtn");
-  if(phase === "idle"){
-    const d = parseFloat($("#dist").value);
-    if(!(d > 0 && d <= 60)){ toast("距離は 1〜60m で入力してね"); return; }
-    phase = "armed"; t0 = performance.now();
-    btn.textContent = "当たった瞬間にタップ!";
-    btn.classList.add("armed");
-    $("#speedValue").textContent = "•••";
-    $("#speedValue").classList.add("live");
-    $("#speedSub").textContent = "ボールが飛んでいる…";
-    $("#resultActions").hidden = true;
-  } else if(phase === "armed"){
-    const sec = (performance.now() - t0) / 1000;
-    const d = parseFloat($("#dist").value);
-    if(sec < 0.15){ // 誤タップ防止
-      toast("速すぎ! もう一度計測してね");
-      resetMeasure(); return;
-    }
-    const kmh = (d / sec) * 3.6;
-    lastSpeed = Math.round(kmh * 10) / 10;
-    phase = "done";
-    $("#speedValue").textContent = lastSpeed.toFixed(1);
-    $("#speedSub").textContent = `${d}m を ${sec.toFixed(2)}秒 で通過 (約${(d/sec).toFixed(1)} m/s)`;
-    btn.textContent = "タップして計測スタート";
-    btn.classList.remove("armed");
-    $("#resultActions").hidden = false;
+const PERFECT_FOOT_SPEED = 900;   // px/s 以上の振り足で PERFECT
+const KICK_MIN_SPEED = 320;       // px/s 未満の接触は「タッチ」扱いで無得点
+const COMBO_TIMEOUT = 2600;       // ms
+const BALL_RADIUS_BASE = 26;      // px (画面幅で微調整)
+// MediaPipe Pose ランドマーク index
+const LM = { L_ANKLE: 27, R_ANKLE: 28, L_HEEL: 29, R_HEEL: 30, L_FOOT: 31, R_FOOT: 32, NOSE: 0, L_HIP: 23, R_HIP: 24 };
+// 重力加速度(px/s^2)。リアル難易度は実物理: 身長1.7m≒画面高60%として px/m 換算した 9.8m/s^2
+function gAccel() {
+  const cfg = DIFFICULTY[difficulty];
+  if (cfg.real) {
+    const pxPerMeter = (canvas.height * 0.6) / 1.7;
+    return 9.8 * pxPerMeter;
   }
-});
-
-function resetMeasure(){
-  phase = "idle"; lastSpeed = null;
-  const btn = $("#tapBtn");
-  btn.textContent = "タップして計測スタート";
-  btn.classList.remove("armed");
-  $("#speedValue").textContent = "0.0";
-  $("#speedValue").classList.remove("live");
-  $("#speedSub").textContent = "距離をセットして計測をはじめよう";
-  $("#resultActions").hidden = true;
+  return cfg.gravity * 1600 * DPR();
 }
-$("#retryBtn").addEventListener("click", resetMeasure);
 
-$("#saveBtn").addEventListener("click", () => {
-  if(lastSpeed == null) return;
-  const recs = store.get("kt_records", []);
-  recs.push({ v: lastSpeed, d: parseFloat($("#dist").value), t: Date.now() });
-  store.set("kt_records", recs);
-  toast(`${lastSpeed.toFixed(1)} km/h を保存しました`);
-  resetMeasure();
-});
+/* ---------------- DOM ---------------- */
+const $ = (id) => document.getElementById(id);
+const video = $("video"), canvas = $("canvas"), ctx = canvas.getContext("2d");
+const screens = { start: $("screen-start"), difficulty: $("screen-difficulty"), loading: $("screen-loading"), result: $("screen-result") };
+const hud = $("hud"), scoreVal = $("score-val"), timeVal = $("time-val"), hitsVal = $("hits-val");
+const hudTime = $("hud-time");
+const comboBanner = $("combo-banner"), comboNum = $("combo-num");
+const positioningMsg = $("positioning-msg"), positioningPill = $("positioning-pill");
+const countdownEl = $("countdown"), countdownNum = $("countdown-num");
+const flipBtn = $("flip-btn"), quitBtn = $("quit-btn");
+const errorBox = $("error-box");
 
-/* ---------- トレーニングメニュー ---------- */
-const MENU = [
-  { tag:"筋力",  name:"ブルガリアンスクワット", dose:"左右 各10回 × 3セット", desc:"後ろ足をイスに乗せて片足スクワット。蹴り足と軸足の両方のパワーを作る。" },
-  { tag:"筋力",  name:"ヒップリフト",           dose:"15回 × 3セット",        desc:"あお向けでお尻を持ち上げる。キックの力の源であるお尻とハムを強化。" },
-  { tag:"体幹",  name:"プランク",               dose:"45秒 × 3セット",        desc:"体の軸がブレないほどインパクトの力がボールに伝わる。" },
-  { tag:"体幹",  name:"デッドバグ",             dose:"左右 各10回 × 2セット",  desc:"あお向けで対角の手足を伸ばす。蹴る時の上半身と下半身の連動を作る。" },
-  { tag:"瞬発",  name:"ジャンプスクワット",     dose:"10回 × 3セット",        desc:"しゃがんで全力ジャンプ。脚を素早く振るためのバネを作る。" },
-  { tag:"瞬発",  name:"バウンディング",         dose:"20m × 4本",             desc:"大きなスキップで前へ跳ぶ。片足で地面を強く押す感覚を覚える。" },
-  { tag:"柔軟",  name:"股関節スイング",         dose:"左右 各15回",           desc:"脚を前後に大きく振る。振り幅が大きいほどスイングスピードは上がる。" },
-  { tag:"技術",  name:"ミートキック",           dose:"10本 × 3セット",        desc:"力まず、足の甲の硬い所でボールの中心を正確に。強いキックは正確なミートから。" },
-];
+/* ---------------- 状態 ---------------- */
+let phase = "start"; // start | loading | positioning | countdown | playing | result
+let difficulty = "NORMAL";
+let gameMode = "VOLLEY"; // VOLLEY | TARGET (CONTROLは休眠中)
+let freeMode = false; // 時間制限なし・スコア記録なし・録画なし
+let bodyParts = {}; // {footL, footR, head, shoulderL, shoulderR, thighL, thighR} 各 {x,y,speed}
+let penaltyCount = 0;
+let faultCount = 0;
+let facingMode = "environment";
+let mirrored = false;
+let poseLandmarker = null;
+let stream = null;
+let lastVideoTime = -1;
 
-function todayKey(){ const d = new Date(); return `kt_done_${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+let feet = { left: null, right: null }; // {x,y,speed,seenAt}
+let prevFeet = { left: null, right: null };
+let poseSeenAt = 0;
 
-function renderMenu(){
-  const done = store.get(todayKey(), []);
-  const list = $("#menuList"); list.innerHTML = "";
-  MENU.forEach((m, i) => {
-    const row = document.createElement("label");
-    row.className = "drill" + (done.includes(i) ? " done" : "");
-    row.innerHTML = `
-      <input type="checkbox" ${done.includes(i) ? "checked" : ""} aria-label="${m.name} 完了">
-      <div class="info">
-        <div class="name"><span style="color:var(--ball);font-size:11px;font-family:var(--num);letter-spacing:.1em">${m.tag}</span>　${m.name}</div>
-        <div class="dose">${m.dose}</div>
-        <div class="desc">${m.desc}</div>
-      </div>`;
-    row.querySelector("input").addEventListener("change", e => {
-      const cur = store.get(todayKey(), []);
-      const next = e.target.checked ? [...new Set([...cur, i])] : cur.filter(x => x !== i);
-      store.set(todayKey(), next);
-      renderMenu();
-      if(next.length === MENU.length) toast("今日のメニュー全クリア!🔥");
-    });
-    list.appendChild(row);
-  });
-  $("#doneCount").textContent = `${done.length} / ${MENU.length} 種目`;
-  $("#donePct").textContent = Math.round(done.length / MENU.length * 100) + "%";
-}
-renderMenu();
+let balls = [];
+let particles = [];
+let popups = [];
+let ballId = 0;
+let lastSpawn = 0;
 
-/* ---------- 休憩タイマー ---------- */
-let restLeft = 60, restTimer = null;
-function drawRest(){
-  const m = Math.floor(restLeft / 60), s = restLeft % 60;
-  $("#restTime").textContent = `${m}:${String(s).padStart(2,"0")}`;
-}
-$("#restStart").addEventListener("click", () => {
-  if(restTimer){ clearInterval(restTimer); restTimer = null; $("#restStart").textContent = "スタート"; $("#restTime").classList.remove("run"); return; }
-  $("#restStart").textContent = "ストップ"; $("#restTime").classList.add("run");
-  restTimer = setInterval(() => {
-    restLeft--;
-    drawRest();
-    if(restLeft <= 0){
-      clearInterval(restTimer); restTimer = null;
-      $("#restStart").textContent = "スタート"; $("#restTime").classList.remove("run");
-      restLeft = 60; toast("休憩おわり! 次のセットへ");
-      drawRest();
-    }
-  }, 1000);
-});
-$("#restReset").addEventListener("click", () => {
-  if(restTimer){ clearInterval(restTimer); restTimer = null; }
-  restLeft = 60; drawRest();
-  $("#restStart").textContent = "スタート"; $("#restTime").classList.remove("run");
-});
-drawRest();
-
-/* ---------- 記録 ---------- */
-function renderRecords(){
-  const recs = store.get("kt_records", []);
-  $("#totalCount").textContent = recs.length;
-  $("#bestVal").textContent = recs.length ? Math.max(...recs.map(r => r.v)).toFixed(1) : "—";
-
-  // グラフ(直近20件・依存ライブラリなしのSVG)
-  const svg = $("#chart");
-  const data = recs.slice(-20);
-  svg.innerHTML = "";
-  const W = 340, H = 160, P = 26;
-  if(data.length < 2){
-    svg.innerHTML = `<text x="${W/2}" y="${H/2}" fill="rgba(233,243,236,.45)" font-size="12" text-anchor="middle">2回以上計測するとグラフが表示されます</text>`;
-  } else {
-    const vs = data.map(r => r.v);
-    const lo = Math.min(...vs) * 0.9, hi = Math.max(...vs) * 1.05;
-    const x = i => P + i * (W - P * 2) / (data.length - 1);
-    const y = v => H - P - (v - lo) / (hi - lo) * (H - P * 2);
-    let g = `<line x1="${P}" y1="${H-P}" x2="${W-P}" y2="${H-P}" stroke="rgba(233,243,236,.2)"/>`;
-    g += `<polyline fill="none" stroke="#ff7a1a" stroke-width="2.5" stroke-linejoin="round" points="${data.map((r,i)=>`${x(i)},${y(r.v)}`).join(" ")}"/>`;
-    data.forEach((r,i) => {
-      g += `<circle cx="${x(i)}" cy="${y(r.v)}" r="3.5" fill="#0b1512" stroke="#ff7a1a" stroke-width="2"/>`;
-    });
-    const best = Math.max(...vs), bi = vs.indexOf(best);
-    g += `<text x="${x(bi)}" y="${y(best)-10}" fill="#e9f3ec" font-size="12" font-weight="700" text-anchor="middle">${best.toFixed(1)}</text>`;
-    svg.innerHTML = g;
+let score = 0, hits = 0, totalBalls = 0, combo = 0, maxCombo = 0, perfectCount = 0;
+let leftHits = 0, rightHits = 0;
+let reactionTimes = []; // 正面ボール: 蹴りどき点灯→キックまでのms
+// ゴールターゲットモード
+let targetZone = 0;      // キーパーが立っているゾーン index (左0/中央1/右2)
+let keeperCatchAt = 0;   // セーブ演出用タイムスタンプ
+let keeperDive = null;   // {fromX, toX, start, dur, saved} シュートへの反応ダイブ
+// 蹴り分け用: 足のスイング速度の移動平均(検出ジッターの影響を抑える)
+const swingSmooth = { L: { x: 0, y: 0 }, R: { x: 0, y: 0 } };
+function updateSwingSmooth() {
+  const pairs = [["L", feet.left], ["R", feet.right]];
+  for (const [k, f] of pairs) {
+    if (!f) continue;
+    swingSmooth[k].x = swingSmooth[k].x * 0.55 + (f.velX || 0) * 0.45;
+    swingSmooth[k].y = swingSmooth[k].y * 0.55 + (f.velY || 0) * 0.45;
   }
+}
+// 検出した体格アンカー: 地面レベル(足の最下点)と頭の位置
+let groundY = null;
+let headTopY = null;
+let lastAnchorMs = 0;
+function trackBodyAnchors(nowMs) {
+  const dtSec = Math.min(0.2, Math.max(0, (nowMs - lastAnchorMs) / 1000));
+  lastAnchorMs = nowMs;
+  const feetYs = [feet.left, feet.right].filter(Boolean).map((f) => f.y);
+  if (feetYs.length > 0) {
+    const cand = Math.max(...feetYs); // 低い方の足=地面に近い
+    // 地面は「足が最も低く映った位置」。ゆっくり減衰させ、立ち位置の変化に数秒で追従
+    groundY = groundY === null ? cand : Math.max(cand, groundY - 40 * dtSec * DPR());
+  }
+  const head = bodyParts.head;
+  if (head) {
+    headTopY = headTopY === null ? head.y : Math.min(head.y, headTopY + 40 * dtSec * DPR());
+  }
+}
+// ボールの高さ決定に使う体格情報(未検出時は画面比率にフォールバック)
+function bodyAnchor() {
+  const h = canvas.height;
+  const ground = groundY !== null ? Math.min(h * 0.97, groundY) : h * 0.85;
+  const bodyH = headTopY !== null && groundY !== null
+    ? Math.max(h * 0.25, Math.min(h * 0.85, groundY - headTopY))
+    : h * 0.5;
+  return { ground, bodyH };
+}
+let goalOnTarget = 0;    // ターゲット的中数
+let goalFrameIn = 0;     // 枠内(ゾーン違い)数
+function goalGeometry() {
+  // 画面下・後ろ向きのゴール(カメラの手前にゴールがあり、プレイヤーはこちらへ蹴り込む)
+  // 高さを基準に幅を決める: 横画面でもゴールが横に伸びすぎず、キーパーの守備範囲が保たれる
+  const w = canvas.width, h = canvas.height;
+  const gh = h * 0.16;                       // マウスの高さ(画面高基準)
+  const gw = Math.min(w * 0.84, gh * 4.2);   // 幅は高さの4.2倍まで(実物比3:1に近い範囲)
+  const gx = (w - gw) / 2;
+  const gy = h * 0.88 - gh;                  // マウス上辺
+  const cols = 3; // 左・中央・右(キーパーの立ち位置)
+  const rows = 1;
+  // 手前側(カメラ側)の背面フレームはマウスより大きく画面下端寄り(遠近)
+  const bw = Math.min(w * 0.98, gw * 1.35);
+  const bx = (w - bw) / 2;
+  const by = h * 0.995;
+  return { gx, gy, gw, gh, cols, rows, bx, by, bw };
+}
+function rerollTarget() {
+  const { cols, rows } = goalGeometry();
+  const n = cols * rows;
+  let next = Math.floor(Math.random() * n);
+  if (n > 1 && next === targetZone) next = (next + 1) % n;
+  targetZone = next;
+}
+function zoneAt(x, geom) {
+  // ゴール上辺ラインに到達した時のx座標からゾーン列を返す(-1=枠外)
+  if (x < geom.gx || x > geom.gx + geom.gw) return -1;
+  return Math.min(geom.cols - 1, Math.floor((x - geom.gx) / (geom.gw / geom.cols)));
+}
+// (penaltyCount/faultCount は上で宣言済み)
+let lastHitAt = 0;
+let timeRemaining = 60;
+let timerHandle = null;
+let positioningStableSince = 0;
+let lastResultSummary = null;
+// リプレイ(1プレイ全体を動画として録画: カメラ+ゲーム画面の合成)
+let mediaRecorder = null;
+let recChunks = [];
+let recBlobUrl = null;
+let recMime = "";
+const recCanvas = document.createElement("canvas");
+let recCtx = null;
+let rafHandle = null;
+let lastFrameTs = 0;
 
-  // 一覧(新しい順)
-  const list = $("#recList");
-  if(!recs.length){
-    list.innerHTML = `<div class="empty">まだ記録がありません。<br>計測タブでボールスピードを測ってみよう!</div>`;
+/* ---------------- ユーティリティ ---------------- */
+const DPR = () => Math.min(2, window.devicePixelRatio || 1);
+function show(el) { el.classList.remove("hidden"); }
+function hide(el) { el.classList.add("hidden"); }
+function setScreen(name) {
+  for (const key of Object.keys(screens)) {
+    if (key === name) show(screens[key]); else hide(screens[key]);
+  }
+}
+function hsKey(d) { return `volleyshoot_highscore_${gameMode}_${d}`; }
+function todayStr() {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+}
+function updateStreak() {
+  try {
+    const today = todayStr();
+    const last = localStorage.getItem("volleyshoot_last_day");
+    let streak = Number(localStorage.getItem("volleyshoot_streak")) || 0;
+    if (last === today) {
+      // 今日すでにプレー済み: 変化なし
+    } else {
+      const y = new Date(); y.setDate(y.getDate() - 1);
+      const yesterday = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, "0")}-${String(y.getDate()).padStart(2, "0")}`;
+      streak = last === yesterday ? streak + 1 : 1;
+      localStorage.setItem("volleyshoot_streak", String(streak));
+      localStorage.setItem("volleyshoot_last_day", today);
+    }
+    return streak;
+  } catch { return 0; }
+}
+function getStreak() {
+  try {
+    const last = localStorage.getItem("volleyshoot_last_day");
+    const streak = Number(localStorage.getItem("volleyshoot_streak")) || 0;
+    if (!last) return 0;
+    const today = todayStr();
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    const yesterday = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, "0")}-${String(y.getDate()).padStart(2, "0")}`;
+    return (last === today || last === yesterday) ? streak : 0;
+  } catch { return 0; }
+}
+function getHighScore(d) { try { return Number(localStorage.getItem(hsKey(d))) || 0; } catch { return 0; } }
+function setHighScore(d, v) { try { localStorage.setItem(hsKey(d), String(v)); } catch {} }
+
+/* ---------------- スコア履歴(ベスト5) ---------------- */
+function scoreHistKey(mode, d) { return `volleyshoot_scorehist_${mode}_${d}`; }
+function getScoreHistory(mode, d) {
+  try {
+    const raw = localStorage.getItem(scoreHistKey(mode, d));
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+function pushScoreHistory(mode, d, score) {
+  try {
+    const arr = getScoreHistory(mode, d);
+    const t = new Date();
+    const dateLabel = `${t.getMonth() + 1}/${t.getDate()}`;
+    arr.push({ score, date: dateLabel });
+    arr.sort((a, b) => b.score - a.score);
+    arr.length = Math.min(arr.length, 5);
+    localStorage.setItem(scoreHistKey(mode, d), JSON.stringify(arr));
+    return arr;
+  } catch { return []; }
+}
+function renderBest5() {
+  const list = $("best5-list");
+  const hist = getScoreHistory(gameMode, difficulty);
+  if (hist.length === 0) {
+    list.innerHTML = `<div class="best5-empty">まだ記録がありません。プレーしてスコアを刻もう。</div>`;
     return;
   }
-  list.innerHTML = "";
-  [...recs].reverse().forEach((r, ri) => {
-    const idx = recs.length - 1 - ri;
-    const dt = new Date(r.t);
-    const row = document.createElement("div");
-    row.className = "rec-row";
-    row.innerHTML = `
-      <div>
-        <div class="s">${r.v.toFixed(1)} <span style="font-size:11px;color:rgba(233,243,236,.45)">km/h</span></div>
-        <div class="d">${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,"0")} ・ ${r.d}m</div>
-      </div>
-      <button class="del" aria-label="この記録を削除">✕</button>`;
-    row.querySelector(".del").addEventListener("click", () => {
-      const cur = store.get("kt_records", []);
-      cur.splice(idx, 1);
-      store.set("kt_records", cur);
-      renderRecords();
-    });
-    list.appendChild(row);
+  list.innerHTML = hist.map((h, i) => `
+    <div class="best5-row">
+      <span class="best5-rank">${i + 1}</span>
+      <span class="best5-score">${h.score}</span>
+      <span class="best5-date">${h.date}</span>
+    </div>
+  `).join("");
+}
+function vibrate(pattern) { try { navigator.vibrate && navigator.vibrate(pattern); } catch {} }
+
+/* ---------------- サウンド(WebAudioで合成、素材ファイル不要) ---------------- */
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
+  }
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+}
+function playKickSound(perfect) {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  // ドスッというキック音: ノイズバースト + ピッチ降下
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(perfect ? 340 : 240, t);
+  osc.frequency.exponentialRampToValueAtTime(60, t + 0.16);
+  gain.gain.setValueAtTime(0.5, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(t); osc.stop(t + 0.22);
+  if (perfect) {
+    const o2 = audioCtx.createOscillator(); const g2 = audioCtx.createGain();
+    o2.type = "triangle";
+    o2.frequency.setValueAtTime(880, t + 0.02);
+    o2.frequency.exponentialRampToValueAtTime(1760, t + 0.12);
+    g2.gain.setValueAtTime(0.18, t + 0.02);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    o2.connect(g2).connect(audioCtx.destination);
+    o2.start(t + 0.02); o2.stop(t + 0.27);
+  }
+}
+function playComboSound(n) {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  [523.25, 659.25, 783.99].forEach((f, i) => {
+    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    o.type = "square"; o.frequency.value = f * (1 + Math.min(n, 20) * 0.01);
+    g.gain.setValueAtTime(0.08, t + i * 0.07);
+    g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.07 + 0.18);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t + i * 0.07); o.stop(t + i * 0.07 + 0.2);
   });
 }
+function playBeep(freq, dur = 0.12, vol = 0.2) {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+  o.type = "sine"; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+function playWhistle() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  [0, 0.28].forEach((delay, i) => {
+    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    o.type = "square"; o.frequency.value = i === 0 ? 2200 : 2400;
+    g.gain.setValueAtTime(0.12, t + delay);
+    g.gain.setValueAtTime(0.12, t + delay + 0.18);
+    g.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.24);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t + delay); o.stop(t + delay + 0.26);
+  });
+}
+
+/* ---------------- カメラ ---------------- */
+async function startCamera() {
+  stopCamera();
+  const constraints = {
+    audio: false,
+    video: {
+      facingMode: { ideal: facingMode },
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+    },
+  };
+  stream = await navigator.mediaDevices.getUserMedia(constraints);
+  video.srcObject = stream;
+  await new Promise((res) => {
+    if (video.readyState >= 2) return res();
+    video.onloadeddata = () => res();
+  });
+  await video.play();
+  // 実際に取得できたカメラの向きを確認
+  const track = stream.getVideoTracks()[0];
+  const settings = track.getSettings ? track.getSettings() : {};
+  const actualFacing = settings.facingMode || facingMode;
+  mirrored = actualFacing === "user";
+  video.classList.toggle("mirrored", mirrored);
+}
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+}
+
+/* ---------------- 骨格検出モデル ---------------- */
+async function loadModel() {
+  if (poseLandmarker) return;
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+  );
+  poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath:
+        "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+      delegate: "GPU",
+    },
+    runningMode: "VIDEO",
+    numPoses: 1,
+    minPoseDetectionConfidence: 0.5,
+    minPosePresenceConfidence: 0.5,
+    minTrackingConfidence: 0.5,
+  });
+}
+
+/* ---------------- 座標変換 (object-fit: cover 対応) ---------------- */
+function landmarkToScreen(lm) {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const cw = canvas.width, ch = canvas.height;
+  if (!vw || !vh) return { x: 0, y: 0 };
+  const scale = Math.max(cw / vw, ch / vh);
+  const dispW = vw * scale, dispH = vh * scale;
+  const offX = (cw - dispW) / 2, offY = (ch - dispH) / 2;
+  let x = lm.x * dispW + offX;
+  const y = lm.y * dispH + offY;
+  if (mirrored) x = cw - x;
+  return { x, y };
+}
+
+/* ---------------- 足の検出・追跡 ---------------- */
+function footPoint(landmarks, ankleIdx, footIdx, heelIdx) {
+  const a = landmarks[ankleIdx], f = landmarks[footIdx], h = landmarks[heelIdx];
+  const vis = (p) => (p && (p.visibility === undefined || p.visibility > 0.4));
+  if (!vis(a) && !vis(f)) return null;
+  // つま先寄り(足の甲=インステップ)を打点にする
+  const pts = [];
+  if (vis(a)) pts.push(landmarkToScreen(a));
+  if (vis(f)) { const p = landmarkToScreen(f); pts.push(p, p); } // つま先を重み2
+  if (vis(h)) pts.push(landmarkToScreen(h));
+  const x = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+  const y = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+  return { x, y };
+}
+
+function midScreen(lms, i1, i2) {
+  const a = lms[i1], b = lms[i2];
+  const vis = (p) => (p && (p.visibility === undefined || p.visibility > 0.4));
+  if (!vis(a) || !vis(b)) return null;
+  const pa = landmarkToScreen(a), pb = landmarkToScreen(b);
+  return { x: (pa.x + pb.x) / 2, y: (pa.y + pb.y) / 2 };
+}
+function singleScreen(lms, idx) {
+  const p = lms[idx];
+  const vis = (q) => (q && (q.visibility === undefined || q.visibility > 0.4));
+  if (!vis(p)) return null;
+  return landmarkToScreen(p);
+}
+function updatePose(nowMs) {
+  if (!poseLandmarker || video.readyState < 2) return;
+  if (video.currentTime === lastVideoTime) return;
+  lastVideoTime = video.currentTime;
+  let result;
+  try {
+    result = poseLandmarker.detectForVideo(video, nowMs);
+  } catch { return; }
+  const lms = result && result.landmarks && result.landmarks[0];
+  const prevParts = bodyParts;
+  prevFeet = { left: feet.left, right: feet.right };
+  if (!lms) { feet = { left: null, right: null }; bodyParts = {}; return; }
+  poseSeenAt = nowMs;
+  const dt = Math.max(16, nowMs - (feet.leftSeenAt || nowMs - 33)) / 1000;
+  const withSpeed = (cur, prev) => {
+    if (!cur) return null;
+    if (!prev) return { ...cur, speed: 0, velX: 0, velY: 0 };
+    const velX = (cur.x - prev.x) / dt;
+    const velY = (cur.y - prev.y) / dt;
+    return { ...cur, speed: Math.hypot(velX, velY), velX, velY };
+  };
+  // 各部位の打点を計算
+  const footL = footPoint(lms, LM.L_ANKLE, LM.L_FOOT, LM.L_HEEL);
+  const footR = footPoint(lms, LM.R_ANKLE, LM.R_FOOT, LM.R_HEEL);
+  // かかと→つま先の軸(ミート部位の判定に使用)
+  if (footL) footL.axis = { heel: singleScreen(lms, LM.L_HEEL), toe: singleScreen(lms, LM.L_FOOT) };
+  if (footR) footR.axis = { heel: singleScreen(lms, LM.R_HEEL), toe: singleScreen(lms, LM.R_FOOT) };
+  const head = singleScreen(lms, LM.NOSE);              // 鼻=額の代表点
+  const shoulderL = singleScreen(lms, 11);
+  const shoulderR = singleScreen(lms, 12);
+  const thighL = midScreen(lms, LM.L_HIP, 25);          // 股関節と膝の中点
+  const thighR = midScreen(lms, LM.R_HIP, 26);
+  bodyParts = {
+    footL: withSpeed(footL, prevParts.footL),
+    footR: withSpeed(footR, prevParts.footR),
+    head: withSpeed(head, prevParts.head),
+    shoulderL: withSpeed(shoulderL, prevParts.shoulderL),
+    shoulderR: withSpeed(shoulderR, prevParts.shoulderR),
+    thighL: withSpeed(thighL, prevParts.thighL),
+    thighR: withSpeed(thighR, prevParts.thighR),
+  };
+  feet = { left: bodyParts.footL, right: bodyParts.footR, leftSeenAt: nowMs };
+  trackBodyAnchors(nowMs);
+}
+function partCategory(key) {
+  if (key === "footL" || key === "footR") return "FOOT";
+  if (key === "head") return "HEAD";
+  if (key === "shoulderL" || key === "shoulderR") return "SHOULDER";
+  return "THIGH";
+}
+function partPointsOf(category) {
+  const map = { FOOT: ["footL","footR"], HEAD: ["head"], SHOULDER: ["shoulderL","shoulderR"], THIGH: ["thighL","thighR"] };
+  return map[category].map((k) => bodyParts[k]).filter(Boolean);
+}
+function pickRequiredPart() {
+  const r = Math.random();
+  let acc = 0;
+  for (const [k, w] of PART_WEIGHTS) { acc += w; if (r < acc) return k; }
+  return "FOOT";
+}
+
+/* ---------------- ボール ---------------- */
+function pickBallType() {
+  const cfg = DIFFICULTY[difficulty];
+  const r = Math.random();
+  if (gameMode === "TARGET") {
+    // ターゲットモードは狙いに集中: 黒なし
+    if (r < cfg.goldRate) return "GOLD";
+    if (r < cfg.goldRate + cfg.blueRate) return "BLUE";
+    return "NORMAL";
+  }
+  if (r < cfg.blackRate) return "BLACK";
+  if (r < cfg.blackRate + cfg.goldRate) return "GOLD";
+  if (r < cfg.blackRate + cfg.goldRate + cfg.blueRate) return "BLUE";
+  return "NORMAL";
+}
+function spawnBall(nowMs) {
+  const cfg = DIFFICULTY[difficulty];
+  const spawnIv = gameMode === "CONTROL" ? cfg.spawnInterval + 500 : cfg.spawnInterval;
+  if (nowMs - lastSpawn < spawnIv) return;
+  lastSpawn = nowMs;
+  const w = canvas.width, h = canvas.height;
+  const fromLeft = Math.random() > 0.5;
+  const type = pickBallType();
+  const speedFactor = cfg.speedMin + Math.random() * (cfg.speedMax - cfg.speedMin);
+  const typeSpeed = type === "BLUE" ? 1.25 : 1;
+  const startX = fromLeft ? -40 : w + 40;
+  const anchor = bodyAnchor();
+  const startY = Math.min(h * 0.97, anchor.ground + (Math.random() * 30 - 5) * DPR());
+  let targetX = w * (0.3 + Math.random() * 0.4);
+  let apexY = h * (0.28 + Math.random() * 0.25);
+  let requiredPart = null;
+  if (gameMode === "CONTROL" && type !== "BLACK") {
+    // 指示部位を決め、検出中の実際の部位の高さへ向けて投げる
+    requiredPart = pickRequiredPart();
+    const pts = partPointsOf(requiredPart);
+    if (pts.length > 0) {
+      const p = pts[Math.floor(Math.random() * pts.length)];
+      const d = DPR();
+      targetX = Math.max(w * 0.15, Math.min(w * 0.85, p.x + (Math.random() - 0.5) * 160 * d));
+      apexY = Math.max(h * 0.08, p.y - (50 + Math.random() * 90) * d); // 部位より少し上を頂点に
+    } else {
+      // 部位が未検出なら画面ゾーンで代用
+      const zone = { FOOT: 0.62, THIGH: 0.5, SHOULDER: 0.34, HEAD: 0.26 }[requiredPart];
+      apexY = h * (zone - 0.1);
+    }
+  }
+  const flightBase = gameMode === "CONTROL" ? 2.15 : 1.78; // 滞空しすぎない軌道に
+  const flightTime = (flightBase - speedFactor) / typeSpeed;
+  const g = cfg.gravity * 1600 * DPR();
+  const fullRadius = BALL_RADIUS_BASE * DPR() * cfg.ballScale * Math.min(1.25, Math.max(0.8, w / (420 * DPR()))) * (type === "GOLD" ? 0.92 : 1);
+
+  // 正面から飛んでくるボール(奥行き疑似表現)
+  if (Math.random() < cfg.frontRate) {
+    // 目標: 検出中の足元(なければ画面下部ゾーン)
+    const feetPts = [feet.left, feet.right].filter(Boolean);
+    let tx, ty;
+    if (feetPts.length > 0) {
+      const fp = feetPts[Math.floor(Math.random() * feetPts.length)];
+      const d = DPR();
+      if (type === "BLACK") {
+        // 黒は足元を直接狙わず、横へ大きく逸らす(動けない部屋でも理不尽にならない)
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        tx = Math.max(w * 0.08, Math.min(w * 0.92, fp.x + dir * (170 + Math.random() * 150) * d));
+        ty = Math.max(h * 0.4, Math.min(h * 0.95, fp.y + (Math.random() - 0.5) * 120 * d));
+      } else {
+        tx = Math.max(w * 0.15, Math.min(w * 0.85, fp.x + (Math.random() - 0.5) * 180 * d));
+        // 55%は足元より高い位置(体高の20〜50%=膝〜腰)へ届く浮き球
+        const anchor2 = bodyAnchor();
+        const lift = Math.random() < 0.55
+          ? anchor2.bodyH * (0.2 + Math.random() * 0.3)
+          : (Math.random() - 0.5) * 80 * d;
+        ty = Math.max(h * 0.35, Math.min(h * 0.95, fp.y - lift));
+      }
+    } else {
+      tx = w * (0.3 + Math.random() * 0.4);
+      ty = h * (0.7 + Math.random() * 0.15);
+    }
+    const sx = w * (0.35 + Math.random() * 0.3); // 遠くの出現位置(中央上寄り)
+    const sy = h * (0.2 + Math.random() * 0.12);
+    balls.push({
+      id: ballId++, kind: "FRONT",
+      x: sx, y: sy, vx: 0, vy: 0,
+      startX: sx, startY: sy, targetX: tx, targetY: ty,
+      p: 0, flightTime: flightTime * 1.15, // 正面は少し余裕を持たせる
+      fullRadius, radius: fullRadius * 0.32,
+      type, active: true, spin: 0, kicked: false, kickedVx: 0, kickedVy: 0,
+      requiredPart, faulted: false, touchHinted: false, fade: 1,
+    });
+    if (type !== "BLACK") totalBalls++;
+    return;
+  }
+
+  // 軌道生成: targetX に到達する瞬間の高さ(passY)を、検出した地面と体格を基準に直接指定する。
+  // 65%は膝〜胸の高さ(浮き球のダイレクトボレー)、35%は足元(ハーフボレー)
+  let vy0;
+  let spawnPassY = null;
+  if (gameMode === "CONTROL") {
+    vy0 = -Math.sqrt(2 * g * Math.max(60, startY - apexY)); // 休眠モードは従来式
+  } else {
+    const anchor = bodyAnchor();
+    const highBall = Math.random() < 0.65;
+    const rawPassY = highBall
+      ? anchor.ground - anchor.bodyH * (0.25 + Math.random() * 0.35)  // 膝〜胸(体高の25〜60%上)
+      : anchor.ground - anchor.bodyH * (0.02 + Math.random() * 0.1);  // 足元
+    spawnPassY = Math.max(h * 0.28, rawPassY);
+    vy0 = (spawnPassY - startY - 0.5 * g * flightTime * flightTime) / flightTime;
+  }
+  const vx0 = (targetX - startX) / flightTime;
+  balls.push({
+    id: ballId++, kind: "SIDE", x: startX, y: startY, vx: vx0, vy: vy0,
+    radius: fullRadius, type, active: true, spin: 0, kicked: false, kickedVx: 0, kickedVy: 0,
+    requiredPart, faulted: false, touchHinted: false, fade: 1, passY: spawnPassY,
+  });
+  if (type !== "BLACK") totalBalls++;
+}
+// 正面ボールがキック可能な進行度の窓
+const FRONT_KICK_MIN_P = 0.76;
+const FRONT_KICK_MAX_P = 1.1;
+function isFrontKickable(b) {
+  return b.kind === "FRONT" && b.p >= FRONT_KICK_MIN_P && b.p <= FRONT_KICK_MAX_P;
+}
+function easeInQuad(t) { return t * t; }
+function updateBalls(dt, nowMs) {
+  const nowMsRef = nowMs;
+  updateSwingSmooth();
+  const cfg = DIFFICULTY[difficulty];
+  const g = gAccel();
+  const w = canvas.width, h = canvas.height;
+  for (const b of balls) {
+    if (b.kicked) {
+      if (gameMode === "TARGET" && b.shotPending) {
+        // カメラ手前のゴールへ向かう遠近シュート: 進行度でアニメーション
+        b.shotP = (b.shotP || 0) + dt / (b.shotTime || 0.55);
+        const p = Math.min(1, b.shotP);
+        const ease = p * p * (3 - 2 * p); // smoothstep
+        b.x = b.shotFromX + (b.shotToX - b.shotFromX) * ease;
+        // 少し浮いてからゴールへ沈む弾道
+        b.y = b.shotFromY + (b.shotToY - b.shotFromY) * ease - Math.sin(p * Math.PI) * 60 * DPR();
+        b.radius = b.shotBaseR * (1 + 1.1 * ease); // 近づくほど大きく(遠近)
+        b.spin += dt * 20;
+        if (b.shotP >= 1) {
+          b.shotPending = false;
+          b.shotDone = true;
+          resolveShot(b, nowMs, goalGeometry());
+        }
+        continue;
+      }
+      if (b.shotDone) {
+        // 判定後はネットに収まりつつフェードアウト
+        b.fade = Math.max(0, (b.fade ?? 1) - dt * 2.4);
+        b.spin += dt * 6;
+        continue;
+      }
+      b.x += b.kickedVx * dt;
+      b.y += b.kickedVy * dt;
+      b.spin += dt * 25;
+      continue;
+    }
+    if (b.kind === "FRONT") {
+      // 蹴りどきを逃した後は「死に球」として物理落下し、足元(地面)まで落ちてから消える
+      if (b.dropping) {
+        b.vy += g * dt;
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        b.spin += dt * 8;
+        const groundLine = Math.min(h * 0.97, bodyAnchor().ground + 6 * DPR());
+        if (b.y >= groundLine) {
+          b.y = groundLine;
+          b.vx *= 0.92; // 地面で転がりつつ減速
+          b.fade = Math.max(0, b.fade - dt * 2.2); // 着地してからフェード
+          // 着地=蹴れなかったことが確定した瞬間にミスを精算(1回だけ)
+          if (b.active && !b.settled && phase === "playing") {
+            b.settled = true;
+            b.active = false; // 以後は判定なし
+            if (b.type === "BLACK") {
+              const bonus = Math.round(5 * cfg.multiplier);
+              score += bonus;
+              scoreVal.textContent = String(score);
+              popups.push({
+                x: Math.max(60, Math.min(w - 60, b.x)), y: Math.max(120, Math.min(h - 120, b.y)),
+                text: `+${bonus}`, sub: "ナイススルー!",
+                born: nowMs, life: 900, color: "#7CFC9A",
+              });
+              playBeep(784, 0.1, 0.12);
+            } else {
+              combo = 0;
+              updateComboBanner();
+            }
+          }
+        }
+        continue;
+      }
+      const px = b.x, py = b.y;
+      const wasKickable = b.p >= FRONT_KICK_MIN_P;
+      b.p += dt / b.flightTime;
+      if (!wasKickable && b.p >= FRONT_KICK_MIN_P && !b.ringAt) b.ringAt = nowMs;
+      // 位置の補間は p=1 で止めず延長する(空中で静止しない)。サイズだけ等倍で頭打ち
+      const pm = b.p;
+      const pc = Math.min(1, b.p);
+      b.x = b.startX + (b.targetX - b.startX) * pm;
+      b.y = b.startY + (b.targetY - b.startY) * easeInQuad(pm) - Math.sin(pm * Math.PI) * 40 * DPR();
+      b.radius = b.fullRadius * (0.32 + 0.68 * easeInQuad(pc));
+      b.spin += dt * 5;
+      b.instVx = (b.x - px) / dt;
+      b.instVy = (b.y - py) / dt;
+      // 蹴りどき窓が閉じた → 直前の速度をそのまま引き継いで自然に落下へ(まだ蹴れる・半分の点数)
+      if (b.p > FRONT_KICK_MAX_P) {
+        b.dropping = true;
+        b.late = true;          // 遅れキック: 得点半減の印
+        b.radius = b.fullRadius;
+        b.fade = 0.92;
+        b.vx = b.instVx || 0;
+        b.vy = Math.max(0, b.instVy || 0);
+      }
+      continue;
+    }
+    b.vy += g * dt;
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+    b.spin += dt * 8 * Math.sign(b.vx || 1);
+  }
+  // 画面外に出たボールを除去(未キックはミス扱い→コンボ切れ)
+  balls = balls.filter((b) => {
+    const out = b.shotDone
+      ? b.fade <= 0
+      : b.kind === "FRONT" && !b.kicked
+        ? b.fade <= 0
+        : (b.x < -140 || b.x > w + 140 || b.y > h + 140 || b.y < -240);
+    if (out && b.active && !b.kicked && phase === "playing") {
+      if (b.type === "BLACK") {
+        // 我慢の成功に小さな報酬
+        const bonus = Math.round(5 * cfg.multiplier);
+        score += bonus;
+        scoreVal.textContent = String(score);
+        popups.push({
+          x: Math.max(60, Math.min(w - 60, b.x)), y: Math.max(120, Math.min(h - 120, b.y)),
+          text: `+${bonus}`, sub: "ナイススルー!",
+          born: nowMsRef, life: 900, color: "#7CFC9A",
+        });
+        playBeep(784, 0.1, 0.12);
+      } else {
+        combo = 0;
+        updateComboBanner();
+      }
+    }
+    return !out;
+  });
+  // 当たり判定
+  if (phase !== "playing") return;
+  if (gameMode === "VOLLEY" || gameMode === "TARGET") {
+    const hitFeet = [
+      feet.left ? { point: feet.left, side: "L", speed: feet.left.speed } : null,
+      feet.right ? { point: feet.right, side: "R", speed: feet.right.speed } : null,
+    ].filter(Boolean);
+    if (hitFeet.length === 0) return;
+    for (const b of balls) {
+      if (!b.active || b.kicked) continue;
+      if (b.kind === "FRONT" && !isFrontKickable(b) && !b.dropping) continue; // まだ遠い球は判定なし(落下中は蹴れる)
+      for (const f of hitFeet) {
+        const dist = Math.hypot(f.point.x - b.x, f.point.y - b.y);
+        // 黒ボールは判定を狭く(明確に蹴った時だけ)
+        const radiusMul = b.type === "BLACK" ? 0.6 : 1;
+        if (dist <= cfg.hitRadius * DPR() * radiusMul + b.radius) {
+          // 正面ボレーは足が奥行き方向に動き画面上の移動量が小さくなるため閾値を緩和
+          const frontRelief = b.kind === "FRONT" ? 0.45 : 1;
+          const swinging = (f.speed || 0) >= KICK_MIN_SPEED * DPR() * frontRelief;
+          if (b.type === "BLACK") {
+            if (swinging) onBlackHit(b, nowMs); // 蹴ってしまった=減点
+            else onBlackSafe(b, nowMs);         // 静止して触れただけ=セーフ
+            break;
+          }
+          if (swinging) {
+            onKick(b, f.point, nowMs, f.side); // スイングあり=キック成立
+          } else {
+            onTouch(b, nowMs);   // スイングなし=タッチ(無得点)
+          }
+          break;
+        }
+      }
+    }
+  } else {
+    // コントロールモード: 全部位で判定し、正しい部位かチェック
+    for (const b of balls) {
+      if (!b.active || b.kicked || b.faulted) continue;
+      let contact = null; // {key, part, dist}
+      for (const key of Object.keys(bodyParts)) {
+        const p = bodyParts[key];
+        if (!p) continue;
+        const cat = partCategory(key);
+        const r = cfg.hitRadius * DPR() * PARTS[cat].radiusScale;
+        const dist = Math.hypot(p.x - b.x, p.y - b.y);
+        if (dist <= r + b.radius && (!contact || dist < contact.dist)) {
+          contact = { key, part: p, dist, cat };
+        }
+      }
+      if (!contact) continue;
+      if (b.type === "BLACK") { onBlackHit(b, nowMs); continue; }
+      if (contact.cat === b.requiredPart) {
+        onKick(b, contact.part, nowMs);
+      } else {
+        onFault(b, contact.cat, nowMs);
+      }
+    }
+  }
+}
+function resolveShot(ball, nowMs, geom) {
+  const cfg = DIFFICULTY[difficulty];
+  // 着弾X座標の列で判定(左・中央・右)。targetZone = キーパーが立つゾーン
+  const col = zoneAt(ball.x, geom);
+  if (col < 0) {
+    combo = 0;
+    updateComboBanner();
+    popups.push({ x: Math.max(60, Math.min(canvas.width - 60, ball.x)), y: geom.gy - 30, text: "0", sub: "枠外!", born: nowMs, life: 900, color: "#9AA3B8" });
+    playBeep(240, 0.12, 0.15);
+    return;
+  }
+  if (ball.willBeSaved) {
+    // キーパーのダイブが届いた → セーブされた
+    goalFrameIn++;
+    combo = 0;
+    updateComboBanner();
+    keeperCatchAt = nowMs;
+    spawnBurst(ball.x, ball.y, "#3B9CFF", 16);
+    popups.push({ x: ball.x, y: geom.gy - 30, text: "0", sub: "セーブされた!", born: nowMs, life: 1000, color: "#3B9CFF" });
+    playBeep(300, 0.16, 0.18);
+    vibrate(40);
+    rerollTarget(); // セーブ後もキーパーは移動する
+    return;
+  }
+  // キーパーのいないコース → ゴール!!
+  const base = ball.late ? 15 : 30; // 蹴りどきを逃した遅れシュートは半分
+  const comboBonus = combo * 5;
+  const pts = Math.round(base * cfg.multiplier * (ball.shotPerfect ? 1.5 : 1) + comboBonus);
+  score += pts;
+  hits++; goalOnTarget++;
+  combo++; maxCombo = Math.max(maxCombo, combo);
+  if (ball.shotPerfect) perfectCount++;
+  lastHitAt = nowMs;
+  rerollTarget(); // ゴール後キーパーは新しいコースへ移動
+  spawnBurst(ball.x, ball.y, "#FFC53D", 30);
+  popups.push({ x: ball.x, y: geom.gy - 30, text: `+${pts}`, sub: ball.shotPerfect ? "ゴール!! PERFECT" : "ゴール!!", born: nowMs, life: 1100, color: "#FFC53D" });
+  playComboSound(Math.max(2, combo));
+  vibrate([50, 30, 80]);
+  updateComboBanner();
+  scoreVal.textContent = String(score);
+  hitsVal.textContent = String(hits);
+}
+function onShotMiss(ball, nowMs, label) {
+  combo = 0;
+  updateComboBanner();
+  popups.push({ x: ball.x, y: Math.max(140, ball.y), text: "0", sub: label, born: nowMs, life: 900, color: "#9AA3B8" });
+  playBeep(240, 0.12, 0.15);
+}
+function onTouch(ball, nowMs) {
+  if (ball.touchHinted) return; // 同じボールで連発させない
+  ball.touchHinted = true;
+  popups.push({
+    x: ball.x, y: ball.y - 20,
+    text: "タッチ…", sub: "足を振って蹴ろう!",
+    born: nowMs, life: 900, color: "#9AA3B8",
+  });
+  playBeep(300, 0.08, 0.08);
+  vibrate(15);
+}
+function onBlackSafe(ball, nowMs) {
+  if (ball.touchHinted) return;
+  ball.touchHinted = true;
+  popups.push({
+    x: ball.x, y: ball.y - 20,
+    text: "セーフ!", sub: "蹴らなければ平気",
+    born: nowMs, life: 900, color: "#7CFC9A",
+  });
+  playBeep(520, 0.08, 0.1);
+}
+function onBlackHit(ball, nowMs) {
+  const cfg = DIFFICULTY[difficulty];
+  const penalty = Math.round(20 * cfg.multiplier);
+  score = Math.max(0, score - penalty);
+  penaltyCount++;
+  combo = 0;
+  updateComboBanner();
+  ball.kicked = true;
+  ball.active = false;
+  ball.kickedVx = (Math.random() - 0.5) * 500 * DPR();
+  ball.kickedVy = -(600 + Math.random() * 300) * DPR();
+  spawnBurst(ball.x, ball.y, "#FF4757", 22);
+  popups.push({ x: ball.x, y: ball.y - 20, text: `-${penalty}`, sub: "ペナルティ!", born: nowMs, life: 1000, color: "#FF4757" });
+  playBuzzer();
+  vibrate([80, 40, 80]);
+  scoreVal.textContent = String(score);
+}
+function onFault(ball, usedCat, nowMs) {
+  ball.faulted = true;
+  combo = 0;
+  updateComboBanner();
+  popups.push({ x: ball.x, y: ball.y - 20, text: "MISS", sub: `${PARTS[ball.requiredPart].label}で!`, born: nowMs, life: 900, color: "#9AA3B8" });
+  faultCount++;
+  playBeep(220, 0.15, 0.18);
+  vibrate(40);
+}
+function playBuzzer() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+  o.type = "sawtooth"; o.frequency.setValueAtTime(160, t);
+  o.frequency.linearRampToValueAtTime(110, t + 0.3);
+  g.gain.setValueAtTime(0.22, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + 0.38);
+}
+function onKick(ball, foot, nowMs, side) {
+  const cfg = DIFFICULTY[difficulty];
+  if (side === "L") leftHits++;
+  else if (side === "R") rightHits++;
+  if (ball.kind === "FRONT" && ball.ringAt) {
+    reactionTimes.push(Math.max(0, nowMs - ball.ringAt));
+  }
+  if (gameMode === "TARGET") {
+    const perfect = (foot.speed || 0) >= PERFECT_FOOT_SPEED * DPR() * (ball.kind === "FRONT" ? 0.6 : 1);
+    ball.kicked = true;
+    ball.active = false;
+    ball.shotPending = true;
+    ball.shotPerfect = perfect;
+
+    // ---- 狙い(左右)の決定: ミートポイント+スイング+入射反射の横成分 ----
+    const norm = (x, y) => {
+      const m = Math.hypot(x, y);
+      return m > 1 ? { x: x / m, y: y / m } : null;
+    };
+    const contactN = norm(ball.x - foot.x, ball.y - foot.y); // ボールの右側を叩けば左へ
+    const sm = swingSmooth[side] || { x: 0, y: 0 };
+    // 平滑化したスイング(ジッター耐性)と瞬間スイングのブレンド
+    const swingN = norm((foot.velX || 0) * 0.4 + sm.x * 0.6, (foot.velY || 0) * 0.4 + sm.y * 0.6);
+    const inVx = ball.kind === "FRONT" ? (ball.instVx || 0) : ball.vx;
+    const inVy = ball.kind === "FRONT" ? (ball.instVy || 0) : ball.vy;
+    let reflectN = null;
+    if (contactN) {
+      const dot = inVx * contactN.x + inVy * contactN.y;
+      reflectN = norm(inVx - 2 * dot * contactN.x, inVy - 2 * dot * contactN.y);
+    }
+    // 蹴り分け強化: スイング方向と入射反射の寄与を大きく
+    // (流れてきたボールを振り抜けば逆サイドへ抜けるスイープが出せる)
+    let aimX = 0;
+    if (contactN) aimX += contactN.x * 0.45;
+    if (swingN) aimX += swingN.x * 0.45;
+    if (reflectN) aimX += reflectN.x * 0.25;
+
+    const geom = goalGeometry();
+    const goalCenterX = geom.gx + geom.gw / 2;
+    const zw = geom.gw / geom.cols;
+    // ---- 蹴り分けは左・中央・右の3択に離散化する ----
+    // 技術スコア = 狙い成分(tanh飽和) + ボール位置の空間バイアス
+    const aimEff = Math.tanh(aimX * 1.2);
+    const sAim = aimEff + ((ball.x - goalCenterX) / geom.gw) * 0.5;
+    let shotCol;
+    if (Math.abs(sAim) > 1.0) {
+      shotCol = -1; // 極端な力みだけは枠外
+    } else if (Math.abs(sAim) <= 0.18) {
+      shotCol = 1;  // 中央
+    } else {
+      shotCol = sAim < 0 ? 0 : 2; // 左 / 右
+    }
+    // 着弾は選ばれたコースの中央(ポスト際などの中間表現はしない)
+    const landX = shotCol < 0
+      ? (sAim < 0 ? geom.gx - zw * 0.4 : geom.gx + geom.gw + zw * 0.4)
+      : geom.gx + shotCol * zw + zw / 2;
+    const landY = geom.gy + geom.gh * 0.55;
+    // 強い振りほど速いシュート(短い到達時間)
+    const mag = Math.max(1, (foot.speed || 0) * (ball.kind === "FRONT" ? 1.6 : 1));
+    const shotTime = Math.max(0.4, 0.85 - Math.min(2600, mag) / 6000);
+
+    // ---- キーパーとの駆け引き(コース単位) ----
+    // 同じコース=セーブ / 隣のコース=弱いシュートならダイブで届く / 逆サイド=ゴール
+    const keeperStandX = geom.gx + targetZone * zw + zw / 2;
+    const colDist = shotCol < 0 ? 99 : Math.abs(shotCol - targetZone);
+    const willBeSaved = colDist === 0 || (colDist === 1 && shotTime > 0.58);
+    ball.willBeSaved = willBeSaved;
+    keeperDive = {
+      fromX: keeperStandX,
+      toX: willBeSaved ? landX : keeperStandX + Math.sign(landX - keeperStandX || 1) * zw * 0.55,
+      start: nowMs,
+      dur: shotTime * 1000,
+      saved: willBeSaved,
+    };
+    ball.shotP = 0;
+    ball.shotTime = shotTime;
+    ball.shotFromX = ball.x; ball.shotFromY = ball.y;
+    ball.shotToX = landX; ball.shotToY = landY;
+    ball.shotBaseR = ball.radius;
+    spawnBurst(ball.x, ball.y, "#F5F8FF", 14);
+    playKickSound(perfect);
+    vibrate(perfect ? [40, 30, 60] : 35);
+    hitsVal.textContent = String(hits);
+    return;
+  }
+  const perfect = (foot.speed || 0) >= PERFECT_FOOT_SPEED * DPR() * (ball.kind === "FRONT" ? 0.6 : 1);
+  const base = BALL_TYPE[ball.type].points;
+  const late = !!ball.late; // 蹴りどきを逃した後の遅れキック: 半分の点・コンボ据え置き
+  const comboBonus = late ? 0 : combo * 5;
+  const pts = late
+    ? Math.max(1, Math.round(base * cfg.multiplier * 0.5))
+    : Math.round(base * cfg.multiplier * (perfect ? 1.5 : 1) + comboBonus);
+  score += pts;
+  hits++;
+  if (!late) {
+    combo++;
+    maxCombo = Math.max(maxCombo, combo);
+    if (perfect) perfectCount++;
+  }
+  lastHitAt = nowMs;
+
+  ball.kicked = true;
+  ball.active = false;
+  // ボールをゴール方向(画面上方)へ吹き飛ばす
+  const dir = ball.x < canvas.width / 2 ? 1 : -1;
+  ball.kickedVx = dir * (500 + Math.random() * 400) * DPR();
+  ball.kickedVy = -(1400 + Math.random() * 500) * DPR();
+
+  spawnBurst(ball.x, ball.y, BALL_TYPE[ball.type].color, late ? 10 : perfect ? 26 : 16);
+  popups.push({
+    x: ball.x, y: ball.y - 20,
+    text: `+${pts}`,
+    sub: late ? "遅れた!" : perfect ? "PERFECT!" : (ball.type === "GOLD" ? "GOLD!" : ""),
+    born: nowMs, life: 900,
+    color: perfect ? "#FFC53D" : "#F5F8FF",
+  });
+  playKickSound(perfect);
+  vibrate(perfect ? [40, 30, 60] : 35);
+  if (combo > 1 && combo % 5 === 0) playComboSound(combo);
+
+  scoreVal.textContent = String(score);
+  hitsVal.textContent = String(hits);
+  updateComboBanner();
+}
+function updateComboBanner() {
+  if (combo >= 2) {
+    comboNum.textContent = String(combo);
+    comboBanner.classList.add("show");
+    const scale = Math.min(1.5, 1 + combo * 0.03);
+    comboNum.style.transform = `scale(${scale})`;
+  } else {
+    comboBanner.classList.remove("show");
+  }
+}
+
+/* ---------------- エフェクト ---------------- */
+function spawnBurst(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const spd = (250 + Math.random() * 550) * DPR();
+    particles.push({
+      x, y,
+      vx: Math.cos(ang) * spd,
+      vy: Math.sin(ang) * spd - 200,
+      life: 0.55 + Math.random() * 0.4,
+      age: 0,
+      size: (3 + Math.random() * 5) * DPR(),
+      color,
+    });
+  }
+}
+function updateParticles(dt) {
+  for (const p of particles) {
+    p.age += dt;
+    p.vy += 1500 * DPR() * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+  }
+  particles = particles.filter((p) => p.age < p.life);
+}
+
+/* ---------------- 描画 ---------------- */
+function roundRect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+function drawBall(b) {
+  const d = DPR();
+  // 正面ボール: 蹴りどきになったらパルスリングで知らせる
+  if (isFrontKickable(b) && !b.kicked) {
+    const pulse = 1 + Math.sin(performance.now() / 90) * 0.08;
+    ctx.save();
+    ctx.strokeStyle = b.type === "BLACK" ? "rgba(255,71,87,0.95)" : "rgba(245,248,255,0.95)";
+    ctx.lineWidth = 4 * d;
+    ctx.shadowColor = b.type === "BLACK" ? "rgba(255,71,87,1)" : "rgba(35,224,255,1)";
+    ctx.shadowBlur = 18 * d;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, (b.radius + 12 * d) * pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    if (b.type !== "BLACK") {
+      ctx.textAlign = "center";
+      ctx.font = `800 ${13 * d}px 'M PLUS Rounded 1c', sans-serif`;
+      ctx.fillStyle = "#F5F8FF";
+      ctx.shadowBlur = 4 * d;
+      ctx.fillText("蹴りどき!", b.x, b.y - b.radius - 18 * d);
+    }
+    ctx.restore();
+  }
+  // コントロールモード: ボール上部に指示部位ラベルとリングを描画
+  if (b.requiredPart && !b.kicked && !b.faulted) {
+    const pc = PARTS[b.requiredPart];
+    ctx.save();
+    ctx.strokeStyle = pc.color;
+    ctx.lineWidth = 3.5 * d;
+    ctx.shadowColor = pc.color;
+    ctx.shadowBlur = 10 * d;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius + 9 * d, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 4 * d;
+    ctx.textAlign = "center";
+    ctx.font = `800 ${15 * d}px 'M PLUS Rounded 1c', sans-serif`;
+    // ラベル背景
+    const label = pc.label;
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = "rgba(11,16,38,0.85)";
+    const pad = 8 * d;
+    roundRect(ctx, b.x - tw / 2 - pad, b.y - b.radius - 38 * d, tw + pad * 2, 24 * d, 12 * d);
+    ctx.fill();
+    ctx.fillStyle = pc.color;
+    ctx.fillText(label, b.x, b.y - b.radius - 21 * d);
+    ctx.restore();
+  }
+  // 黒ボール: 警告リング
+  if (b.type === "BLACK" && !b.kicked) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,71,87,0.9)";
+    ctx.lineWidth = 3 * d;
+    ctx.setLineDash([6 * d, 6 * d]);
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius + 8 * d, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.textAlign = "center";
+    ctx.font = `800 ${13 * d}px 'M PLUS Rounded 1c', sans-serif`;
+    ctx.fillStyle = "#FF4757";
+    ctx.shadowColor = "rgba(0,0,0,0.7)";
+    ctx.shadowBlur = 4 * d;
+    ctx.fillText("さわるな!", b.x, b.y - b.radius - 14 * d);
+    ctx.restore();
+  }
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.rotate(b.spin);
+  ctx.globalAlpha = (b.faulted ? 0.35 : 1) * (b.fade !== undefined ? b.fade : 1);
+  // 遠くにある正面ボールは少し霞ませて奥行き感を出す
+  if (b.kind === "FRONT" && !b.kicked && b.p < FRONT_KICK_MIN_P) {
+    ctx.globalAlpha *= 0.55 + 0.45 * (b.p / FRONT_KICK_MIN_P);
+  }
+  const t = BALL_TYPE[b.type];
+  // グロー
+  ctx.shadowColor = t.glow;
+  ctx.shadowBlur = 24;
+  // 本体
+  const grad = ctx.createRadialGradient(-b.radius * 0.35, -b.radius * 0.35, b.radius * 0.1, 0, 0, b.radius);
+  grad.addColorStop(0, "#FFFFFF");
+  grad.addColorStop(0.55, t.color);
+  grad.addColorStop(1, b.type === "NORMAL" ? "#B9C4D8" : t.color);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  // サッカーボール風の五角形パッチ
+  ctx.fillStyle = b.type === "GOLD" ? "rgba(120,80,0,0.8)" : b.type === "BLACK" ? "rgba(255,71,87,0.55)" : "rgba(11,16,38,0.85)";
+  const pent = (cx, cy, r) => {
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+      const px = cx + Math.cos(a) * r, py = cy + Math.sin(a) * r;
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.closePath(); ctx.fill();
+  };
+  pent(0, 0, b.radius * 0.34);
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+    pent(Math.cos(a) * b.radius * 0.78, Math.sin(a) * b.radius * 0.78, b.radius * 0.2);
+  }
+  ctx.restore();
+}
+function drawFoot(f, nowMs) {
+  if (!f) return;
+  const cfg = DIFFICULTY[difficulty];
+  const spd = f.speed || 0;
+  const fast = spd >= PERFECT_FOOT_SPEED * DPR();
+  const armed = spd >= KICK_MIN_SPEED * DPR(); // キック成立速度に達しているか
+  const d = DPR();
+  // 判定サークル
+  ctx.save();
+  ctx.strokeStyle = fast ? "rgba(255,197,61,0.9)" : armed ? "rgba(35,224,255,0.95)" : "rgba(35,224,255,0.45)";
+  ctx.lineWidth = 3 * d;
+  ctx.setLineDash([8 * d, 8 * d]);
+  ctx.lineDashOffset = -((nowMs / 40) % 16) * d;
+  ctx.beginPath();
+  ctx.arc(f.x, f.y, cfg.hitRadius * d, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // 中心マーカー
+  ctx.shadowColor = fast ? "rgba(255,197,61,1)" : "rgba(35,224,255,1)";
+  ctx.shadowBlur = 16 * d;
+  ctx.fillStyle = fast ? "#FFC53D" : armed ? "#23E0FF" : "rgba(35,224,255,0.55)";
+  ctx.beginPath();
+  ctx.arc(f.x, f.y, 9 * d, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+function drawPopups(nowMs) {
+  for (const p of popups) {
+    const t = (nowMs - p.born) / p.life;
+    if (t >= 1) continue;
+    const alpha = 1 - t;
+    const d = DPR();
+    const y = p.y - t * 90 * d;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.textAlign = "center";
+    ctx.font = `700 ${30 * d}px Bungee, sans-serif`;
+    ctx.fillStyle = p.color;
+    ctx.shadowColor = "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = 6 * d;
+    ctx.fillText(p.text, p.x, y);
+    if (p.sub) {
+      ctx.font = `700 ${16 * d}px Bungee, sans-serif`;
+      ctx.fillStyle = "#FFC53D";
+      ctx.fillText(p.sub, p.x, y - 32 * d);
+    }
+    ctx.restore();
+  }
+  popups = popups.filter((p) => nowMs - p.born < p.life);
+}
+function drawParticles() {
+  for (const p of particles) {
+    const alpha = 1 - p.age / p.life;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawGoal(nowMs) {
+  const d = DPR();
+  const geom = goalGeometry();
+  const { gx, gy, gw, gh, cols, bx, by, bw } = geom;
+  const mouthBottom = gy + gh;
+  ctx.save();
+  ctx.globalAlpha = 0.55; // ゴール全体を透過(プレー視界を遮らない)
+
+  // --- ネット(奥のマウス → 手前の背面フレームへ広がるメッシュ) ---
+  ctx.strokeStyle = "rgba(245,248,255,0.4)";
+  ctx.lineWidth = 1 * d;
+  const meshN = 12;
+  for (let i = 0; i <= meshN; i++) {
+    const t = i / meshN;
+    const mxp = gx + gw * t;          // マウス上の点
+    const bxp = bx + bw * t;          // 背面フレーム上の点
+    ctx.beginPath(); ctx.moveTo(mxp, mouthBottom); ctx.lineTo(bxp, by); ctx.stroke();
+  }
+  for (let j = 0; j <= 4; j++) {
+    const t = j / 4;
+    const y1 = mouthBottom + (by - mouthBottom) * t;
+    const x1 = gx + (bx - gx) * t;
+    const x2 = gx + gw + (bx + bw - (gx + gw)) * t;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y1); ctx.stroke();
+  }
+  // マウス面(開口部)の内側の網
+  for (let i = 1; i < meshN; i++) {
+    const xx = gx + (gw * i) / meshN;
+    ctx.beginPath(); ctx.moveTo(xx, gy); ctx.lineTo(xx, mouthBottom); ctx.stroke();
+  }
+  for (let j = 1; j <= 2; j++) {
+    const yy = gy + (gh * j) / 3;
+    ctx.beginPath(); ctx.moveTo(gx, yy); ctx.lineTo(gx + gw, yy); ctx.stroke();
+  }
+
+  // --- ゾーンガイド(左・中央・右、薄い区切りのみ) ---
+  const zw = gw / cols;
+  ctx.strokeStyle = "rgba(245,248,255,0.22)";
+  ctx.lineWidth = 1.5 * d;
+  ctx.setLineDash([5 * d, 7 * d]);
+  for (let c = 1; c < cols; c++) {
+    const zx = gx + c * zw;
+    ctx.beginPath(); ctx.moveTo(zx, gy); ctx.lineTo(zx, mouthBottom); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // --- ゴールフレーム(白いクロスバー+両ポスト: マウス側) ---
+  ctx.strokeStyle = "#FFFFFF";
+  ctx.lineCap = "round";
+  ctx.lineWidth = 5 * d;
+  ctx.shadowColor = "rgba(245,248,255,0.5)";
+  ctx.shadowBlur = 8 * d;
+  ctx.beginPath(); ctx.moveTo(gx - 2 * d, gy); ctx.lineTo(gx + gw + 2 * d, gy); ctx.stroke(); // クロスバー
+  ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx, mouthBottom); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(gx + gw, gy); ctx.lineTo(gx + gw, mouthBottom); ctx.stroke();
+  ctx.shadowBlur = 0;
+  // 背面フレーム(手前側、太め・薄め)
+  ctx.strokeStyle = "rgba(255,255,255,0.5)";
+  ctx.lineWidth = 7 * d;
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + bw, by); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(gx, mouthBottom); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx + bw, by); ctx.lineTo(gx + gw, mouthBottom); ctx.stroke();
+
+  ctx.restore();
+
+  // --- キーパー(半透明シルエット、左右にゆらぎ) ---
+  drawKeeper(nowMs, geom);
+}
+
+function drawKeeper(nowMs, geom) {
+  const d = DPR();
+  const { gx, gy, gw, gh, cols } = geom;
+  const zw = gw / cols;
+  const sway = Math.sin(nowMs / 420) * zw * 0.06; // 左右のゆらぎ
+  let cx = gx + targetZone * zw + zw / 2 + sway;
+  // シュートへの反応ダイブ: 発射〜着弾の間、着弾点(届く範囲まで)へ滑らかに移動
+  if (keeperDive) {
+    const t = (nowMs - keeperDive.start) / keeperDive.dur;
+    if (t <= 1.6) {
+      const p = Math.min(1, t);
+      const ease = 1 - (1 - p) * (1 - p); // easeOut
+      cx = keeperDive.fromX + (keeperDive.toX - keeperDive.fromX) * ease;
+    } else {
+      keeperDive = null; // ダイブ終了 → 立ち位置に戻る
+    }
+  }
+  const catching = nowMs - keeperCatchAt < 450; // セーブ直後は腕を広げる
+  const kh = gh * 0.9;              // キーパーの身長(クロスバーより低い=実物の比率)
+  const baseY = gy + gh;            // 足元 = マウス下辺
+  const headR = kh * 0.13;
+  ctx.save();
+  const headY = baseY - kh + headR;
+  const shoulderY = headY + headR * 1.7;
+  const hipY = baseY - kh * 0.38;
+  const armSpan = catching ? kh * 0.52 : kh * 0.34;
+  const armY = catching ? shoulderY - kh * 0.12 : shoulderY + kh * 0.1;
+  // 骨格を2パスで描く: 1周目=暗い縁取り(明るい映像上での視認性)、2周目=本体
+  const drawSkeleton = () => {
+    ctx.beginPath(); ctx.arc(cx, headY, headR, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, shoulderY); ctx.lineTo(cx, hipY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, shoulderY + 4 * d); ctx.lineTo(cx - armSpan, armY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, shoulderY + 4 * d); ctx.lineTo(cx + armSpan, armY); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx - armSpan, armY, headR * 0.5, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx + armSpan, armY, headR * 0.5, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, hipY); ctx.lineTo(cx - kh * 0.16, baseY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, hipY); ctx.lineTo(cx + kh * 0.16, baseY); ctx.stroke();
+  };
+  // 1周目: 暗い縁取り
+  ctx.globalAlpha = catching ? 0.9 : 0.75;
+  ctx.strokeStyle = "rgba(7,9,15,0.85)";
+  ctx.lineWidth = 8 * d;
+  ctx.lineCap = "round";
+  ctx.shadowBlur = 0;
+  drawSkeleton();
+  // 2周目: 本体(明るいシアン)
+  ctx.strokeStyle = "#7BE9FF";
+  ctx.lineWidth = 4.5 * d;
+  ctx.shadowColor = "rgba(95,217,255,0.9)";
+  ctx.shadowBlur = 14 * d;
+  drawSkeleton();
+  // 頭とグローブの塗り
+  ctx.fillStyle = "rgba(123,233,255,0.5)";
+  ctx.beginPath(); ctx.arc(cx, headY, headR, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx - armSpan, armY, headR * 0.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + armSpan, armY, headR * 0.5, 0, Math.PI * 2); ctx.fill();
+
+  // 「GK」ラベル
+  ctx.shadowColor = "rgba(7,9,15,0.9)";
+  ctx.shadowBlur = 5 * d;
+  ctx.textAlign = "center";
+  ctx.font = `800 ${12 * d}px 'M PLUS 1', sans-serif`;
+  ctx.fillStyle = "#7BE9FF";
+  ctx.fillText("GK", cx, headY - headR - 8 * d);
+  ctx.restore();
+}
+function drawAllParts(nowMs) {
+  const d = DPR();
+  const cfg = DIFFICULTY[difficulty];
+  for (const key of Object.keys(bodyParts)) {
+    const p = bodyParts[key];
+    if (!p) continue;
+    const cat = partCategory(key);
+    const pc = PARTS[cat];
+    const r = cfg.hitRadius * d * pc.radiusScale;
+    ctx.save();
+    ctx.strokeStyle = pc.color;
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 2.5 * d;
+    ctx.setLineDash([6 * d, 8 * d]);
+    ctx.lineDashOffset = -((nowMs / 50) % 14) * d;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    ctx.shadowColor = pc.color;
+    ctx.shadowBlur = 12 * d;
+    ctx.fillStyle = pc.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 7 * d, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ---------------- リプレイ(1プレイ全録画) ---------------- */
+function recorderSupported() {
+  return typeof MediaRecorder !== "undefined" && recCanvas.captureStream;
+}
+function pickRecMime() {
+  const candidates = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm"];
+  for (const m of candidates) {
+    try { if (MediaRecorder.isTypeSupported(m)) return m; } catch {}
+  }
+  return "";
+}
+function startRecording() {
+  if (!recorderSupported()) return;
+  try {
+    // 縦横比は画面に合わせ、幅480pxで軽量に録画
+    const aspect = window.innerHeight / window.innerWidth;
+    recCanvas.width = 480;
+    recCanvas.height = Math.min(1040, Math.round(480 * aspect));
+    recCtx = recCanvas.getContext("2d");
+    if (recBlobUrl) { URL.revokeObjectURL(recBlobUrl); recBlobUrl = null; }
+    recChunks = [];
+    recMime = pickRecMime();
+    const stream = recCanvas.captureStream(30);
+    mediaRecorder = new MediaRecorder(stream, recMime ? { mimeType: recMime, videoBitsPerSecond: 2500000 } : undefined);
+    mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) recChunks.push(e.data); };
+    mediaRecorder.start(1000);
+  } catch (e) { console.warn("録画を開始できませんでした", e); mediaRecorder = null; }
+}
+function stopRecording(onReady) {
+  if (!mediaRecorder) { onReady && onReady(false); return; }
+  const mr = mediaRecorder;
+  mediaRecorder = null;
+  mr.onstop = () => {
+    try {
+      const blob = new Blob(recChunks, { type: recMime || "video/webm" });
+      if (blob.size > 0) {
+        recBlobUrl = URL.createObjectURL(blob);
+        onReady && onReady(true);
+        return;
+      }
+    } catch {}
+    onReady && onReady(false);
+  };
+  try { mr.stop(); } catch { onReady && onReady(false); }
+}
+function drawRecordingFrame() {
+  if (!recCtx || !mediaRecorder) return;
+  const rw = recCanvas.width, rh = recCanvas.height;
+  const vw = video.videoWidth, vh = video.videoHeight;
+  if (vw && vh) {
+    const sc = Math.max(rw / vw, rh / vh);
+    const dw = vw * sc, dh = vh * sc;
+    const ox = (rw - dw) / 2, oy = (rh - dh) / 2;
+    if (mirrored) { recCtx.save(); recCtx.scale(-1, 1); recCtx.drawImage(video, -(ox + dw), oy, dw, dh); recCtx.restore(); }
+    else recCtx.drawImage(video, ox, oy, dw, dh);
+  } else {
+    recCtx.fillStyle = "#000"; recCtx.fillRect(0, 0, rw, rh);
+  }
+  // ゲーム画面(ボール・マーカー・エフェクト)を重ねる
+  recCtx.drawImage(canvas, 0, 0, rw, rh);
+}
+function openReplay() {
+  if (!recBlobUrl) return;
+  show($("replay-overlay"));
+  const v = $("replay-video");
+  v.src = recBlobUrl;
+  v.currentTime = 0;
+  v.play().catch(() => {});
+}
+function closeReplay() {
+  const v = $("replay-video");
+  try { v.pause(); } catch {}
+  hide($("replay-overlay"));
+}
+
+/* ---------------- ポジショニング判定 ---------------- */
+function handlePositioning(nowMs) {
+  const bothFeet = feet.left && feet.right;
+  const poseAlive = nowMs - poseSeenAt < 600;
+  if (bothFeet && poseAlive) {
+    if (!positioningStableSince) positioningStableSince = nowMs;
+    const held = nowMs - positioningStableSince;
+    positioningPill.textContent = "OK! そのまま動かないで…";
+    positioningPill.classList.add("ok");
+    if (held >= 1200) {
+      startCountdown();
+    }
+  } else {
+    positioningStableSince = 0;
+    positioningPill.classList.remove("ok");
+    positioningPill.textContent = poseAlive
+      ? "足元までカメラに映るように下がってください"
+      : "全身がカメラに映る位置に立ってください";
+  }
+}
+function startCountdown() {
+  phase = "countdown";
+  hide(positioningMsg);
+  show(countdownEl);
+  let n = 3;
+  countdownNum.textContent = String(n);
+  playBeep(880);
+  vibrate(20);
+  const iv = setInterval(() => {
+    n--;
+    if (n <= 0) {
+      clearInterval(iv);
+      hide(countdownEl);
+      beginPlay();
+    } else {
+      countdownNum.textContent = String(n);
+      playBeep(880);
+      vibrate(20);
+    }
+  }, 1000);
+}
+
+/* ---------------- ゲームフロー ---------------- */
+function beginPlay() {
+  phase = "playing";
+  playBeep(1320, 0.3, 0.25);
+  const cfg = DIFFICULTY[difficulty];
+  score = 0; hits = 0; totalBalls = 0; combo = 0; maxCombo = 0; perfectCount = 0;
+  penaltyCount = 0; faultCount = 0;
+  leftHits = 0; rightHits = 0; reactionTimes = [];
+  goalOnTarget = 0; goalFrameIn = 0;
+  rerollTarget();
+  if (!freeMode) startRecording();
+  balls = []; particles = []; popups = [];
+  timeRemaining = freeMode ? Infinity : cfg.timeLimit;
+  lastSpawn = performance.now() - cfg.spawnInterval + 600; // 最初のボールは0.6秒後
+  scoreVal.textContent = "0";
+  hitsVal.textContent = "0";
+  timeVal.textContent = freeMode ? "∞" : String(timeRemaining);
+  hudTime.classList.remove("warn");
+  show(hud);
+  if (freeMode) return; // フリーモード: タイマーなし。「やめる」ボタンで終了する
+  timerHandle = setInterval(() => {
+    timeRemaining--;
+    timeVal.textContent = String(Math.max(0, timeRemaining));
+    if (timeRemaining <= 10) {
+      hudTime.classList.add("warn");
+      if (timeRemaining > 0) playBeep(660, 0.08, 0.12);
+    }
+    if (timeRemaining <= 0) endGame();
+  }, 1000);
+}
+function endGame() {
+  if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+  phase = "result";
+  playWhistle();
+  vibrate([80, 60, 80]);
+  hide(hud);
+  comboBanner.classList.remove("show");
+  hide(flipBtn); hide(quitBtn);
+
+  const rate = totalBalls > 0 ? Math.round((hits / totalBalls) * 100) : 0;
+  document.querySelector("#screen-result .stat-box:nth-child(1) .s-label").textContent = gameMode === "TARGET" ? "的中数" : "成功数";
+  document.querySelector("#screen-result .stat-box:nth-child(2) .s-label").textContent = gameMode === "TARGET" ? "的中率" : "成功率";
+  const streak = updateStreak();
+  $("streak-result").textContent = streak >= 2 ? `🔥 ${streak}日連続トレーニング中!` : "今日のトレーニング完了!";
+  $("r-feet").textContent = `${leftHits} / ${rightHits}`;
+  const avgReact = reactionTimes.length > 0
+    ? (reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length / 1000)
+    : null;
+  $("r-react").textContent = avgReact !== null ? `${avgReact.toFixed(2)}秒` : "-";
+  lastResultSummary = null; // 下で組み立て
+  const clean = penaltyCount === 0 && faultCount === 0;
+  const rank = rate >= 85 && clean && perfectCount >= hits * 0.3 ? "S" : rate >= 70 ? "A" : rate >= 45 ? "B" : "C";
+  $("rank-badge").textContent = rank;
+  $("result-score").textContent = String(score);
+  $("r-hits").textContent = `${hits}/${totalBalls}`;
+  $("r-rate").textContent = `${rate}%`;
+  $("r-combo").textContent = String(maxCombo);
+  $("r-perfect").textContent = String(perfectCount);
+  $("r-penalty").textContent = String(penaltyCount + faultCount);
+  const diffName = DIFF_NAME[difficulty] || difficulty;
+  const modeName = gameMode === "TARGET" ? "ゴールターゲット" : "ミートシュート";
+  lastResultSummary = `⚽${modeName}(${diffName})で ${score}点・ランク${rank}!最大${maxCombo}コンボ` + (avgReact !== null ? `・平均反応${avgReact.toFixed(2)}秒` : "");
+  if (freeMode) {
+    hide($("newrecord")); // フリーモードは時間無制限のため記録対象外
+  } else {
+    const prev = getHighScore(difficulty);
+    if (score > prev) {
+      setHighScore(difficulty, score);
+      show($("newrecord"));
+    } else {
+      hide($("newrecord"));
+    }
+    pushScoreHistory(gameMode, difficulty, score);
+  }
+  const rb = $("replay-view-btn");
+  const sb = $("replay-save-btn");
+  rb.classList.add("hidden"); sb.classList.add("hidden");
+  stopRecording((ok) => {
+    if (!ok) return;
+    rb.classList.remove("hidden");
+    const ext = (recMime || "").includes("mp4") ? "mp4" : "webm";
+    const d = new Date();
+    sb.setAttribute("href", recBlobUrl);
+    sb.setAttribute("download", `volleyshoot_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}_${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}.${ext}`);
+    sb.classList.remove("hidden");
+  });
+  setScreen("result");
+}
+function backToHome() {
+  closeReplay();
+  stopRecording();
+  if (recBlobUrl) { URL.revokeObjectURL(recBlobUrl); recBlobUrl = null; }
+  if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+  phase = "start";
+  balls = []; particles = []; popups = [];
+  hide(hud); hide(positioningMsg); hide(countdownEl);
+  hide(flipBtn); hide(quitBtn);
+  comboBanner.classList.remove("show");
+  stopCamera();
+  refreshHighScoreLine();
+  setScreen("start");
+}
+async function startGameFlow() {
+  initAudio();
+  const errorBoxDiff = $("error-box-diff");
+  errorBoxDiff.classList.add("hidden");
+  setScreen("loading");
+  phase = "loading";
+  try {
+    $("loading-text").textContent = "カメラを起動しています…";
+    await startCamera();
+    $("loading-text").textContent = "AIモデルを読み込んでいます…";
+    await loadModel();
+  } catch (err) {
+    console.error(err);
+    setScreen("difficulty");
+    phase = "start";
+    errorBoxDiff.classList.remove("hidden");
+    const isPerm = err && (err.name === "NotAllowedError" || err.name === "SecurityError");
+    errorBoxDiff.textContent = isPerm
+      ? "カメラへのアクセスが許可されませんでした。ブラウザの設定でこのサイトのカメラを許可して、もう一度お試しください。(HTTPSまたはlocalhostでのアクセスが必要です)"
+      : `起動に失敗しました: ${err && err.message ? err.message : err}。通信環境を確認して再度お試しください。`;
+    return;
+  }
+  // ポジショニングへ
+  hide(screens.loading);
+  phase = "positioning";
+  positioningStableSince = 0;
+  show(positioningMsg);
+  show(flipBtn); show(quitBtn);
+}
+
+/* ---------------- メインループ ---------------- */
+function resizeCanvas() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = Math.round(window.innerWidth * dpr);
+  canvas.height = Math.round(window.innerHeight * dpr);
+  canvas.style.width = window.innerWidth + "px";
+  canvas.style.height = window.innerHeight + "px";
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+// 内部座標は canvas ピクセル基準。CSSピクセルとの差を吸収するため
+// 描画・判定はすべて canvas.width/height 系で統一している。
+
+function loop(nowMs) {
+  rafHandle = requestAnimationFrame(loop);
+  const dt = Math.min(0.05, (nowMs - (lastFrameTs || nowMs)) / 1000);
+  lastFrameTs = nowMs;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const active = phase === "positioning" || phase === "countdown" || phase === "playing";
+  if (!active) return;
+
+  updatePose(nowMs);
+
+  if (phase === "positioning") {
+    handlePositioning(nowMs);
+  }
+  if (phase === "playing") {
+    spawnBall(nowMs);
+    if (combo > 0 && nowMs - lastHitAt > COMBO_TIMEOUT) {
+      combo = 0;
+      updateComboBanner();
+    }
+  }
+  if (phase === "playing" || phase === "result") {
+    updateBalls(dt, nowMs);
+  }
+  updateParticles(dt);
+
+  // 描画
+  for (const b of balls) drawBall(b);
+  if (gameMode === "TARGET" && (phase === "playing" || phase === "countdown")) drawGoal(nowMs);
+  if (gameMode !== "CONTROL" || phase === "positioning") {
+    drawFoot(feet.left, nowMs);
+    drawFoot(feet.right, nowMs);
+  } else {
+    drawAllParts(nowMs);
+  }
+  drawParticles();
+  drawPopups(nowMs);
+  if (phase === "playing") drawRecordingFrame();
+}
+rafHandle = requestAnimationFrame(loop);
+
+/* ---------------- UIイベント ---------------- */
+const DIFF_NAME = { EASY: "イージー", NORMAL: "ノーマル", HARD: "ハード", REAL: "リアル" };
+const MODE_META = {
+  VOLLEY: { eyebrow: "MEET SHOT", title: "ミートシュート", desc: "飛んでくるボールを正確にミートしてスコアを競う" },
+  TARGET: { eyebrow: "GOAL TARGET", title: "ゴールターゲット", desc: "手前のゴールに立つキーパーをかわして、空いたコースへ蹴り込むシュート精度トレーニング" },
+};
+function refreshHighScoreLine() {
+  renderBest5();
+  const st = getStreak();
+  $("streak-line").textContent = st >= 1 ? `🔥 連続トレーニング ${st}日` : "";
+}
+function openDifficultyScreen(mode) {
+  gameMode = mode;
+  const meta = MODE_META[mode];
+  $("diff-mode-label").textContent = meta.eyebrow;
+  $("diff-mode-title").textContent = meta.title;
+  $("diff-mode-desc").textContent = meta.desc;
+  refreshHighScoreLine();
+  setScreen("difficulty");
+}
+document.querySelectorAll(".mode-card").forEach((card) => {
+  card.addEventListener("click", () => {
+    initAudio();
+    playBeep(880, 0.08, 0.1);
+    openDifficultyScreen(card.dataset.mode);
+  });
+});
+$("diff-back-btn").addEventListener("click", () => {
+  playBeep(500, 0.06, 0.08);
+  setScreen("start");
+});
+document.querySelectorAll("#difficulty-row .diff-card").forEach((card) => {
+  card.addEventListener("click", () => {
+    document.querySelectorAll("#difficulty-row .diff-card").forEach((c) => c.classList.remove("selected"));
+    card.classList.add("selected");
+    difficulty = card.dataset.diff;
+    refreshHighScoreLine();
+    initAudio();
+    playBeep(740, 0.08, 0.1);
+  });
+});
+$("free-mode-card").addEventListener("click", () => {
+  freeMode = !freeMode;
+  $("free-mode-card").classList.toggle("selected", freeMode);
+  initAudio();
+  playBeep(freeMode ? 820 : 500, 0.08, 0.1);
+});
+$("start-btn").addEventListener("click", startGameFlow);
+$("replay-btn").addEventListener("click", async () => {
+  initAudio();
+  setScreen("loading");
+  hide(screens.result);
+  // カメラとモデルは維持したままポジショニングへ
+  hide(screens.loading);
+  phase = "positioning";
+  positioningStableSince = 0;
+  balls = []; particles = []; popups = [];
+  show(positioningMsg);
+  show(flipBtn); show(quitBtn);
+});
+$("home-btn").addEventListener("click", backToHome);
+$("replay-view-btn").addEventListener("click", openReplay);
+$("replay-close-btn").addEventListener("click", closeReplay);
+$("share-btn").addEventListener("click", async () => {
+  const text = lastResultSummary || "⚽VOLLEYSHOOT CHALLENGE";
+  const url = location.href.split("#")[0];
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: "VOLLEYSHOOT CHALLENGE", text, url });
+    } else {
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      $("share-btn").textContent = "コピーしました!";
+      setTimeout(() => { $("share-btn").textContent = "結果をシェア"; }, 1800);
+    }
+  } catch {}
+});
+quitBtn.addEventListener("click", () => {
+  if (phase === "playing" && freeMode) endGame();
+  else backToHome();
+});
+flipBtn.addEventListener("click", async () => {
+  facingMode = facingMode === "environment" ? "user" : "environment";
+  try {
+    $("loading-text").textContent = "カメラを切り替えています…";
+    await startCamera();
+  } catch (e) {
+    console.error(e);
+  }
+});
+
+// 画面がバックグラウンドになったら一時停止扱い(タイマーだけ止める)
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && phase === "playing") {
+    endGame();
+  }
+});
+
+refreshHighScoreLine();
 </script>
 </body>
 </html>
